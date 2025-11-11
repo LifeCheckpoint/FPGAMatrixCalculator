@@ -2,6 +2,8 @@
 
 CS 207 Proj. **基于 FPGA 的矩阵计算器开发**
 
+---
+
 ## 配置与运行
 
 ### VSCode (推荐)
@@ -37,3 +39,9 @@ vivado -mode batch -source (Join-Path $workspaceFolder "scripts\create_project.t
 ```
 
 > 注意，每一次都会根据源代码生成新的 Vivado 项目
+
+---
+
+## 项目内容
+
+Proj 要求见 [docs/ProjRequirements.md](https://github.com/LifeCheckpoint/FPGAMatrixCalculator/tree/main/docs/ProjRequirements.md)
