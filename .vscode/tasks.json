@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Vivado Tcl Script",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "if (!(Test-Path '${workspaceFolder}\\logs')) { New-Item -ItemType Directory -Path '${workspaceFolder}\\logs' }; Set-Location '${workspaceFolder}\\logs'; vivado -mode batch -source '${workspaceFolder}/scripts/create_project.tcl'"
+            ],
+            "options": {
+                "env": {
+                    "PATH": "${env:PATH};${config:vivado.installPath}/bin",
+                    "XILINX_VIVADO": "${config:vivado.installPath}"
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+# Vivado generated files
+vivado_proj/
+logs/
+*.log
+*.jou
+*.backup.log
+*.backup.jou
+*.str
+*.vdi
+*.wdb
+*.wpr
+webtalk*.html
+webtalk*.xml
+.Xil/
+
+# IP and BD generated files (the .xci and .bd are source, the rest are generated)
+src/ip/clk_wiz_0/
+src/bd/design_1/
+
+# Add any other generated directories here
