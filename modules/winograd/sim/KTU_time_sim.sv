@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module kernel_transform_unit_test_wrapper (
+module kernel_transform_unit_time_sim (
     input logic clk,
     output logic placeholder
 );
