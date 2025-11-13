@@ -10,12 +10,11 @@ module tile_controller (
     output logic        done
 );
 
-    localparam S_IDLE              = 3'b000; // IDLE
-    localparam S_KERNEL_TRANSFORM  = 3'b001; // transform kernel to U
-    localparam S_TILE_TRANSFORM    = 3'b010; // transform tile to V
-    localparam S_POINTWISE_MULT    = 3'b011; // pointwise multiplication M = U .* V
-    localparam S_REVERSE_TRANSFORM = 3'b100; // reverse transform M to output
-    localparam S_DONE              = 3'b101; // DONE
+    localparam S_IDLE              = 3'b000;
+    localparam S_TRANSFORM         = 3'b001;
+    localparam S_POINTWISE_MULT    = 3'b010;
+    localparam S_REVERSE_TRANSFORM = 3'b011;
+    localparam S_DONE              = 3'b100;
     
     logic [2:0] state;
     
@@ -59,18 +58,12 @@ module tile_controller (
                 S_IDLE: begin
                     done <= 1'b0;
                     if (start) begin
-                        state <= S_KERNEL_TRANSFORM;
+                        state <= S_TRANSFORM;
                     end
                 end
                 
-                S_KERNEL_TRANSFORM: begin
-                    if (ktu_done) begin
-                        state <= S_TILE_TRANSFORM;
-                    end
-                end
-                
-                S_TILE_TRANSFORM: begin
-                    if (ttu_done) begin
+                S_TRANSFORM: begin
+                    if (ktu_done && ttu_done) begin
                         state <= S_POINTWISE_MULT;
                     end
                 end
@@ -130,32 +123,23 @@ module tile_controller (
             case (state)
                 S_IDLE: begin
                     if (start) begin
-                        // Latch inputs and trigger KTU
                         ktu_kernel_in <= kernel_in;
                         ttu_tile_in <= tile_in;
                     end
                 end
                 
-                S_KERNEL_TRANSFORM: begin
-                    // Trigger KTU on entry (state just changed from IDLE)
+                S_TRANSFORM: begin
                     if (!ktu_done) begin
                         ktu_start <= 1'b1;
                     end
-                    
-                    if (ktu_done) begin
-                        // Latch transformed kernel
-                        U <= ktu_kernel_out;
-                    end
-                end
-                
-                S_TILE_TRANSFORM: begin
-                    // Trigger TTU on entry
                     if (!ttu_done) begin
                         ttu_start <= 1'b1;
                     end
                     
+                    if (ktu_done) begin
+                        U <= ktu_kernel_out;
+                    end
                     if (ttu_done) begin
-                        // Latch transformed tile
                         V <= ttu_tile_out;
                     end
                 end
