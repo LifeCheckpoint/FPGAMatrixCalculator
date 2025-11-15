@@ -56,8 +56,8 @@ module tile_controller (
         end else begin
             case (state)
                 S_IDLE: begin
-                    done <= 1'b0;
                     if (start) begin
+                        done <= 1'b0;
                         state <= S_TRANSFORM;
                     end
                 end
@@ -82,7 +82,12 @@ module tile_controller (
                 
                 S_DONE: begin
                     done <= 1'b1;
-                    state <= S_IDLE;
+                    if (start) begin
+                        done <= 1'b0;
+                        state <= S_IDLE;
+                    end else begin
+                        state <= S_IDLE;
+                    end
                 end
                 
                 default: begin
@@ -125,6 +130,13 @@ module tile_controller (
                     if (start) begin
                         ktu_kernel_in <= kernel_in;
                         ttu_tile_in <= tile_in;
+                        for (int i = 0; i < 6; i++) begin
+                            for (int j = 0; j < 6; j++) begin
+                                U[i][j] <= 16'd0;
+                                V[i][j] <= 16'd0;
+                                M[i][j] <= 16'd0;
+                            end
+                        end
                     end
                 end
                 

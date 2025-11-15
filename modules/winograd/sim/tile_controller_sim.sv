@@ -103,9 +103,6 @@ module tile_controller_sim;
             #1;
             start = 0;
             
-            // Wait for done to go low (entering IDLE)
-            wait(done == 0);
-            
             // Wait for done to go high (computation complete)
             @(posedge done);
             @(posedge clk);
@@ -113,8 +110,6 @@ module tile_controller_sim;
             
             display_result();
             
-            // Wait for done to go low again before next test
-            wait(done == 0);
             @(posedge clk);
             #1;
         end

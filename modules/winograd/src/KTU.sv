@@ -65,6 +65,13 @@ always_ff @(posedge clk or negedge rst_n) begin
     end else begin
         case(state)
             S_IDLE: begin
+                if (start) begin
+                    for (int i = 0; i < 6; i++) begin
+                        for (int j = 0; j < 3; j++) begin
+                            T[i][j] <= 16'd0;
+                        end
+                    end
+                end
             end
             
             S_CALC_T: begin
