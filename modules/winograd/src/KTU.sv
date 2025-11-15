@@ -102,10 +102,10 @@ always_ff @(posedge clk or negedge rst_n) begin
                 T[4][1] <= kernel_in[0][1] - (kernel_in[1][1] << 1) + (kernel_in[2][1] << 2);
                 T[4][2] <= kernel_in[0][2] - (kernel_in[1][2] << 1) + (kernel_in[2][2] << 2);
                 
-                // T[5][j] = 6 * kernel_in[2][j]
-                T[5][0] <= (kernel_in[2][0] << 2) + (kernel_in[2][0] << 1);
-                T[5][1] <= (kernel_in[2][1] << 2) + (kernel_in[2][1] << 1);
-                T[5][2] <= (kernel_in[2][2] << 2) + (kernel_in[2][2] << 1);
+                // T[5][j] = 24 * kernel_in[2][j]
+                T[5][0] <= (kernel_in[2][0] << 4) + (kernel_in[2][0] << 3);
+                T[5][1] <= (kernel_in[2][1] << 4) + (kernel_in[2][1] << 3);
+                T[5][2] <= (kernel_in[2][2] << 4) + (kernel_in[2][2] << 3);
             end
             
             S_CALC_U: begin
@@ -117,7 +117,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 kernel_out[0][2] <= -((T[0][0] - T[0][1] + T[0][2]) << 2);
                 kernel_out[0][3] <= T[0][0] + (T[0][1] << 1) + (T[0][2] << 2);
                 kernel_out[0][4] <= T[0][0] - (T[0][1] << 1) + (T[0][2] << 2);
-                kernel_out[0][5] <= (T[0][2] << 2) + (T[0][2] << 1);
+                kernel_out[0][5] <= (T[0][2] << 4) + (T[0][2] << 3);
                 
                 // Column 1
                 kernel_out[1][0] <= (T[1][0] << 2) + (T[1][0] << 1);
@@ -125,7 +125,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 kernel_out[1][2] <= -((T[1][0] - T[1][1] + T[1][2]) << 2);
                 kernel_out[1][3] <= T[1][0] + (T[1][1] << 1) + (T[1][2] << 2);
                 kernel_out[1][4] <= T[1][0] - (T[1][1] << 1) + (T[1][2] << 2);
-                kernel_out[1][5] <= (T[1][2] << 2) + (T[1][2] << 1);
+                kernel_out[1][5] <= (T[1][2] << 4) + (T[1][2] << 3);
                 
                 // Column 2
                 kernel_out[2][0] <= (T[2][0] << 2) + (T[2][0] << 1);
@@ -133,7 +133,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 kernel_out[2][2] <= -((T[2][0] - T[2][1] + T[2][2]) << 2);
                 kernel_out[2][3] <= T[2][0] + (T[2][1] << 1) + (T[2][2] << 2);
                 kernel_out[2][4] <= T[2][0] - (T[2][1] << 1) + (T[2][2] << 2);
-                kernel_out[2][5] <= (T[2][2] << 2) + (T[2][2] << 1);
+                kernel_out[2][5] <= (T[2][2] << 4) + (T[2][2] << 3);
                 
                 // Column 3
                 kernel_out[3][0] <= (T[3][0] << 2) + (T[3][0] << 1);
@@ -141,7 +141,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 kernel_out[3][2] <= -((T[3][0] - T[3][1] + T[3][2]) << 2);
                 kernel_out[3][3] <= T[3][0] + (T[3][1] << 1) + (T[3][2] << 2);
                 kernel_out[3][4] <= T[3][0] - (T[3][1] << 1) + (T[3][2] << 2);
-                kernel_out[3][5] <= (T[3][2] << 2) + (T[3][2] << 1);
+                kernel_out[3][5] <= (T[3][2] << 4) + (T[3][2] << 3);
                 
                 // Column 4
                 kernel_out[4][0] <= (T[4][0] << 2) + (T[4][0] << 1);
@@ -149,7 +149,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 kernel_out[4][2] <= -((T[4][0] - T[4][1] + T[4][2]) << 2);
                 kernel_out[4][3] <= T[4][0] + (T[4][1] << 1) + (T[4][2] << 2);
                 kernel_out[4][4] <= T[4][0] - (T[4][1] << 1) + (T[4][2] << 2);
-                kernel_out[4][5] <= (T[4][2] << 2) + (T[4][2] << 1);
+                kernel_out[4][5] <= (T[4][2] << 4) + (T[4][2] << 3);
                 
                 // Column 5
                 kernel_out[5][0] <= (T[5][0] << 2) + (T[5][0] << 1);
@@ -157,7 +157,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 kernel_out[5][2] <= -((T[5][0] - T[5][1] + T[5][2]) << 2);
                 kernel_out[5][3] <= T[5][0] + (T[5][1] << 1) + (T[5][2] << 2);
                 kernel_out[5][4] <= T[5][0] - (T[5][1] << 1) + (T[5][2] << 2);
-                kernel_out[5][5] <= (T[5][2] << 2) + (T[5][2] << 1);
+                kernel_out[5][5] <= (T[5][2] << 4) + (T[5][2] << 3);
             end
             
             S_DONE: begin end
