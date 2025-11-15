@@ -5,9 +5,9 @@ module tile_controller_sim;
     logic        clk;
     logic        rst_n;
     logic        start;
-    logic [15:0] kernel_in  [0:2][0:2];
-    logic [15:0] tile_in    [0:5][0:5];
-    logic [15:0] result_out [0:3][0:3];
+    logic [31:0] kernel_in  [0:2][0:2];
+    logic [31:0] tile_in    [0:5][0:5];
+    logic [31:0] result_out [0:3][0:3];
     logic        done;
 
     // Clock generation
@@ -34,12 +34,12 @@ module tile_controller_sim;
         start = 0;
         for (int i = 0; i < 3; i++) begin
             for (int j = 0; j < 3; j++) begin
-                kernel_in[i][j] = 16'd0;
+                kernel_in[i][j] = 32'd0;
             end
         end
         for (int i = 0; i < 6; i++) begin
             for (int j = 0; j < 6; j++) begin
-                tile_in[i][j] = 16'd0;
+                tile_in[i][j] = 32'd0;
             end
         end
         
@@ -51,7 +51,7 @@ module tile_controller_sim;
         $display("\n=== Test 1: Identity-like kernel ===");
         for (int i = 0; i < 3; i++) begin
             for (int j = 0; j < 3; j++) begin
-                kernel_in[i][j] = (i == 1 && j == 1) ? 16'd1 : 16'd0;
+                kernel_in[i][j] = (i == 1 && j == 1) ? 32'd1 : 32'd0;
             end
         end
         for (int i = 0; i < 6; i++) begin
@@ -66,12 +66,12 @@ module tile_controller_sim;
         $display("\n=== Test 2: All-ones kernel ===");
         for (int i = 0; i < 3; i++) begin
             for (int j = 0; j < 3; j++) begin
-                kernel_in[i][j] = 16'd1;
+                kernel_in[i][j] = 32'd1;
             end
         end
         for (int i = 0; i < 6; i++) begin
             for (int j = 0; j < 6; j++) begin
-                tile_in[i][j] = 16'd1;
+                tile_in[i][j] = 32'd1;
             end
         end
         display_inputs();
@@ -79,9 +79,9 @@ module tile_controller_sim;
 
         // Test case 3: Custom values
         $display("\n=== Test 3: Custom kernel and tile ===");
-        kernel_in[0][0] = 16'd1; kernel_in[0][1] = 16'd0; kernel_in[0][2] = 16'd1;
-        kernel_in[1][0] = 16'd0; kernel_in[1][1] = 16'd2; kernel_in[1][2] = 16'd0;
-        kernel_in[2][0] = 16'd1; kernel_in[2][1] = 16'd0; kernel_in[2][2] = 16'd1;
+        kernel_in[0][0] = 32'd1; kernel_in[0][1] = 32'd0; kernel_in[0][2] = 32'd1;
+        kernel_in[1][0] = 32'd0; kernel_in[1][1] = 32'd2; kernel_in[1][2] = 32'd0;
+        kernel_in[2][0] = 32'd1; kernel_in[2][1] = 32'd0; kernel_in[2][2] = 32'd1;
         for (int i = 0; i < 6; i++) begin
             for (int j = 0; j < 6; j++) begin
                 tile_in[i][j] = (i + j) % 3 + 1;

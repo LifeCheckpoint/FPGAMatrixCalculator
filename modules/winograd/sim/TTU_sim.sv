@@ -5,8 +5,8 @@ module tile_transform_unit_sim;
 logic clk;
 logic rst_n;
 logic start;
-logic [15:0] tile_in [0:5][0:5];
-logic [15:0] tile_out [0:5][0:5];
+logic [31:0] tile_in [0:5][0:5];
+logic [31:0] tile_out [0:5][0:5];
 logic transform_done;
 
 tile_transform_unit uut (

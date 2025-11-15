@@ -4,9 +4,9 @@ module winograd_conv_10x12 (
     input  logic        clk,
     input  logic        rst_n,
     input  logic        start,
-    input  logic [15:0] image_in   [0:9][0:11],
-    input  logic [15:0] kernel_in  [0:2][0:2],
-    output logic [15:0] result_out [0:7][0:9],
+    input  logic [31:0] image_in   [0:9][0:11],
+    input  logic [31:0] kernel_in  [0:2][0:2],
+    output logic [31:0] result_out [0:7][0:9],
     output logic        done
 );
 
@@ -25,16 +25,16 @@ module winograd_conv_10x12 (
     logic [1:0] tile_i, tile_j;
     
     logic        tc_start;
-    logic [15:0] tc_kernel_in  [0:2][0:2];
-    logic [15:0] tc_tile_in    [0:5][0:5];
-    logic [15:0] tc_result_out [0:3][0:3];
+    logic [31:0] tc_kernel_in  [0:2][0:2];
+    logic [31:0] tc_tile_in    [0:5][0:5];
+    logic [31:0] tc_result_out [0:3][0:3];
     logic        tc_done;
     
-    logic [15:0] kernel_reg [0:2][0:2];
-    logic [15:0] image_reg [0:9][0:11];
+    logic [31:0] kernel_reg [0:2][0:2];
+    logic [31:0] image_reg [0:9][0:11];
     
     // 10x12 -> 3x3x6x6
-    logic [15:0] tile_out [0:2][0:2][0:5][0:5];
+    logic [31:0] tile_out [0:2][0:2][0:5][0:5];
     
     transform_10x12_3x3x6x6 input_transform_inst (
         .image(image_reg),
@@ -42,7 +42,7 @@ module winograd_conv_10x12 (
     );
     
     // 3x3x4x4 results
-    logic [15:0] result_tiles [0:2][0:2][0:3][0:3];
+    logic [31:0] result_tiles [0:2][0:2][0:3][0:3];
     
     // 3x3x4x4 -> 8x10
     transform_3x3x4x4_8x10 output_transform_inst (
@@ -62,10 +62,10 @@ module winograd_conv_10x12 (
             round_idx <= '0;
             done <= 1'b0;
             tc_start <= 1'b0;
-            kernel_reg <= '{default: 16'd0};
-            tc_kernel_in <= '{default: 16'd0};
-            image_reg <= '{default: 16'd0};
-            result_tiles <= '{default: 16'd0};
+            kernel_reg <= '{default: 32'd0};
+            tc_kernel_in <= '{default: 32'd0};
+            image_reg <= '{default: 32'd0};
+            result_tiles <= '{default: 32'd0};
         end else begin
             case (state)
                 ST_IDLE: begin
@@ -73,7 +73,7 @@ module winograd_conv_10x12 (
                         done <= 1'b0;
                         kernel_reg <= kernel_in;
                         image_reg <= image_in;
-                        result_tiles <= '{default: 16'd0};
+                        result_tiles <= '{default: 32'd0};
                         round_idx <= 4'd0;
                         state <= ST_LOAD;
                     end
@@ -112,7 +112,7 @@ module winograd_conv_10x12 (
                         done <= 1'b0;
                         kernel_reg <= kernel_in;
                         image_reg <= image_in;
-                        result_tiles <= '{default: 16'd0};
+                        result_tiles <= '{default: 32'd0};
                         round_idx <= 4'd0;
                         state <= ST_LOAD;
                     end else begin

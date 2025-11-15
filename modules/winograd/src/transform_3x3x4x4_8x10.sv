@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
 
 module transform_3x3x4x4_8x10 (
-    input  logic [15:0] tile  [0:2][0:2][0:3][0:3],
-    output logic [15:0] image [0:7][0:9]
+    input  logic [31:0] tile  [0:2][0:2][0:3][0:3],
+    output logic [31:0] image [0:7][0:9]
 );
 
 // In this module, input will be stick and clip invalid areas, not div.

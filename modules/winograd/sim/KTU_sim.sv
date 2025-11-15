@@ -5,8 +5,8 @@ module kernel_transform_unit_sim;
 logic clk;
 logic rst_n;
 logic start;
-logic [15:0] kernel_in [0:2][0:2];
-logic [15:0] kernel_out [0:5][0:5];
+logic [31:0] kernel_in [0:2][0:2];
+logic [31:0] kernel_out [0:5][0:5];
 logic transform_done;
 
 kernel_transform_unit uut (

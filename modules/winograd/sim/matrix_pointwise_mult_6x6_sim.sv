@@ -5,9 +5,9 @@ module matrix_pointwise_mult_6x6_sim;
 logic clk;
 logic rst_n;
 logic start;
-logic [15:0] a [6][6];
-logic [15:0] b [6][6];
-logic [31:0] c [6][6];
+logic [31:0] a [6][6];
+logic [31:0] b [6][6];
+logic [63:0] c [6][6];
 logic done;
 
 matrix_pointwise_mult_6x6 uut (

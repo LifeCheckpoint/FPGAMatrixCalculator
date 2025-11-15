@@ -4,8 +4,8 @@ module kernel_transform_unit (
     input logic clk,
     input logic rst_n,
     input logic start,
-    input logic [15:0] kernel_in [0:2][0:2], // 3x3 kernel input
-    output logic [15:0] kernel_out [0:5][0:5], // 6x6 transformed kernel output
+    input logic [31:0] kernel_in [0:2][0:2], // 3x3 kernel input
+    output logic [31:0] kernel_out [0:5][0:5], // 6x6 transformed kernel output
     output logic transform_done
 );
 
@@ -15,7 +15,7 @@ localparam S_CALC_U = 2'b10;
 localparam S_DONE   = 2'b11;
 
 logic [1:0] state;
-logic [15:0] T [0:5][0:2];
+logic [31:0] T [0:5][0:2];
 
 // S_IDLE -> S_CALC_T -> S_CALC_U -> S_DONE -> S_IDLE
 always_ff @(posedge clk or negedge rst_n) begin
@@ -54,12 +54,12 @@ always_ff @(posedge clk or negedge rst_n) begin
         // Reset all registers
         for (int i = 0; i < 6; i++) begin
             for (int j = 0; j < 3; j++) begin
-                T[i][j] <= 16'd0;
+                T[i][j] <= 32'd0;
             end
         end
         for (int i = 0; i < 6; i++) begin
             for (int j = 0; j < 6; j++) begin
-                kernel_out[i][j] <= 16'd0;
+                kernel_out[i][j] <= 32'd0;
             end
         end
     end else begin
@@ -68,7 +68,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 if (start) begin
                     for (int i = 0; i < 6; i++) begin
                         for (int j = 0; j < 3; j++) begin
-                            T[i][j] <= 16'd0;
+                            T[i][j] <= 32'd0;
                         end
                     end
                 end

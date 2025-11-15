@@ -4,8 +4,8 @@ module reverse_transform_unit (
     input logic clk,
     input logic rst_n,
     input logic start,
-    input logic [15:0] matrix_in [0:5][0:5], // 6x6 matrix input
-    output logic [15:0] matrix_out [0:3][0:3], // 4x4 transformed matrix output
+    input logic [31:0] matrix_in [0:5][0:5], // 6x6 matrix input
+    output logic [31:0] matrix_out [0:3][0:3], // 4x4 transformed matrix output
     output logic transform_done
 );
 
@@ -15,7 +15,7 @@ localparam S_CALC_Y = 2'b10;
 localparam S_DONE   = 2'b11;
 
 logic [1:0] state;
-logic [15:0] T [0:3][0:5];
+logic [31:0] T [0:3][0:5];
 
 // S_IDLE -> S_CALC_T -> S_CALC_Y -> S_DONE -> S_IDLE
 always_ff @(posedge clk or negedge rst_n) begin
@@ -54,12 +54,12 @@ always_ff @(posedge clk or negedge rst_n) begin
         // Reset all registers
         for (int i = 0; i < 4; i++) begin
             for (int j = 0; j < 6; j++) begin
-                T[i][j] <= 16'd0;
+                T[i][j] <= 32'd0;
             end
         end
         for (int i = 0; i < 4; i++) begin
             for (int j = 0; j < 4; j++) begin
-                matrix_out[i][j] <= 16'd0;
+                matrix_out[i][j] <= 32'd0;
             end
         end
     end else begin
@@ -68,7 +68,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 if (start) begin
                     for (int i = 0; i < 4; i++) begin
                         for (int j = 0; j < 6; j++) begin
-                            T[i][j] <= 16'd0;
+                            T[i][j] <= 32'd0;
                         end
                     end
                 end

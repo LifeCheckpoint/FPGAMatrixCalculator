@@ -5,8 +5,8 @@ module reverse_transform_unit_sim;
 logic clk;
 logic rst_n;
 logic start;
-logic [15:0] matrix_in [0:5][0:5];
-logic [15:0] matrix_out [0:3][0:3];
+logic [31:0] matrix_in [0:5][0:5];
+logic [31:0] matrix_out [0:3][0:3];
 logic transform_done;
 
 reverse_transform_unit uut (

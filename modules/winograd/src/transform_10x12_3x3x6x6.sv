@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
 
 module transform_10x12_3x3x6x6 (
-    input  logic [15:0] image    [0:9][0:11],
-    output logic [15:0] tile_out [0:2][0:2][0:5][0:5]
+    input  logic [31:0] image    [0:9][0:11],
+    output logic [31:0] tile_out [0:2][0:2][0:5][0:5]
 );
 
 always_comb begin
@@ -36,17 +36,17 @@ always_comb begin
     
     // tile_out[0][2] - Top-right tile
     tile_out[0][2][0][0] = image[0][8];  tile_out[0][2][0][1] = image[0][9];  tile_out[0][2][0][2] = image[0][10];
-    tile_out[0][2][0][3] = image[0][11]; tile_out[0][2][0][4] = 16'b0;        tile_out[0][2][0][5] = 16'b0;
+    tile_out[0][2][0][3] = image[0][11]; tile_out[0][2][0][4] = 32'b0;        tile_out[0][2][0][5] = 32'b0;
     tile_out[0][2][1][0] = image[1][8];  tile_out[0][2][1][1] = image[1][9];  tile_out[0][2][1][2] = image[1][10];
-    tile_out[0][2][1][3] = image[1][11]; tile_out[0][2][1][4] = 16'b0;        tile_out[0][2][1][5] = 16'b0;
+    tile_out[0][2][1][3] = image[1][11]; tile_out[0][2][1][4] = 32'b0;        tile_out[0][2][1][5] = 32'b0;
     tile_out[0][2][2][0] = image[2][8];  tile_out[0][2][2][1] = image[2][9];  tile_out[0][2][2][2] = image[2][10];
-    tile_out[0][2][2][3] = image[2][11]; tile_out[0][2][2][4] = 16'b0;        tile_out[0][2][2][5] = 16'b0;
+    tile_out[0][2][2][3] = image[2][11]; tile_out[0][2][2][4] = 32'b0;        tile_out[0][2][2][5] = 32'b0;
     tile_out[0][2][3][0] = image[3][8];  tile_out[0][2][3][1] = image[3][9];  tile_out[0][2][3][2] = image[3][10];
-    tile_out[0][2][3][3] = image[3][11]; tile_out[0][2][3][4] = 16'b0;        tile_out[0][2][3][5] = 16'b0;
+    tile_out[0][2][3][3] = image[3][11]; tile_out[0][2][3][4] = 32'b0;        tile_out[0][2][3][5] = 32'b0;
     tile_out[0][2][4][0] = image[4][8];  tile_out[0][2][4][1] = image[4][9];  tile_out[0][2][4][2] = image[4][10];
-    tile_out[0][2][4][3] = image[4][11]; tile_out[0][2][4][4] = 16'b0;        tile_out[0][2][4][5] = 16'b0;
+    tile_out[0][2][4][3] = image[4][11]; tile_out[0][2][4][4] = 32'b0;        tile_out[0][2][4][5] = 32'b0;
     tile_out[0][2][5][0] = image[5][8];  tile_out[0][2][5][1] = image[5][9];  tile_out[0][2][5][2] = image[5][10];
-    tile_out[0][2][5][3] = image[5][11]; tile_out[0][2][5][4] = 16'b0;        tile_out[0][2][5][5] = 16'b0;
+    tile_out[0][2][5][3] = image[5][11]; tile_out[0][2][5][4] = 32'b0;        tile_out[0][2][5][5] = 32'b0;
     
     // tile_out[1][0] - Middle-left tile
     tile_out[1][0][0][0] = image[4][0]; tile_out[1][0][0][1] = image[4][1]; tile_out[1][0][0][2] = image[4][2];
@@ -78,59 +78,59 @@ always_comb begin
     
     // tile_out[1][2] - Middle-right tile
     tile_out[1][2][0][0] = image[4][8];  tile_out[1][2][0][1] = image[4][9];  tile_out[1][2][0][2] = image[4][10];
-    tile_out[1][2][0][3] = image[4][11]; tile_out[1][2][0][4] = 16'b0;        tile_out[1][2][0][5] = 16'b0;
+    tile_out[1][2][0][3] = image[4][11]; tile_out[1][2][0][4] = 32'b0;        tile_out[1][2][0][5] = 32'b0;
     tile_out[1][2][1][0] = image[5][8];  tile_out[1][2][1][1] = image[5][9];  tile_out[1][2][1][2] = image[5][10];
-    tile_out[1][2][1][3] = image[5][11]; tile_out[1][2][1][4] = 16'b0;        tile_out[1][2][1][5] = 16'b0;
+    tile_out[1][2][1][3] = image[5][11]; tile_out[1][2][1][4] = 32'b0;        tile_out[1][2][1][5] = 32'b0;
     tile_out[1][2][2][0] = image[6][8];  tile_out[1][2][2][1] = image[6][9];  tile_out[1][2][2][2] = image[6][10];
-    tile_out[1][2][2][3] = image[6][11]; tile_out[1][2][2][4] = 16'b0;        tile_out[1][2][2][5] = 16'b0;
+    tile_out[1][2][2][3] = image[6][11]; tile_out[1][2][2][4] = 32'b0;        tile_out[1][2][2][5] = 32'b0;
     tile_out[1][2][3][0] = image[7][8];  tile_out[1][2][3][1] = image[7][9];  tile_out[1][2][3][2] = image[7][10];
-    tile_out[1][2][3][3] = image[7][11]; tile_out[1][2][3][4] = 16'b0;        tile_out[1][2][3][5] = 16'b0;
+    tile_out[1][2][3][3] = image[7][11]; tile_out[1][2][3][4] = 32'b0;        tile_out[1][2][3][5] = 32'b0;
     tile_out[1][2][4][0] = image[8][8];  tile_out[1][2][4][1] = image[8][9];  tile_out[1][2][4][2] = image[8][10];
-    tile_out[1][2][4][3] = image[8][11]; tile_out[1][2][4][4] = 16'b0;        tile_out[1][2][4][5] = 16'b0;
+    tile_out[1][2][4][3] = image[8][11]; tile_out[1][2][4][4] = 32'b0;        tile_out[1][2][4][5] = 32'b0;
     tile_out[1][2][5][0] = image[9][8];  tile_out[1][2][5][1] = image[9][9];  tile_out[1][2][5][2] = image[9][10];
-    tile_out[1][2][5][3] = image[9][11]; tile_out[1][2][5][4] = 16'b0;        tile_out[1][2][5][5] = 16'b0;
+    tile_out[1][2][5][3] = image[9][11]; tile_out[1][2][5][4] = 32'b0;        tile_out[1][2][5][5] = 32'b0;
     
     // tile_out[2][0] - Bottom-left tile
     tile_out[2][0][0][0] = image[8][0]; tile_out[2][0][0][1] = image[8][1]; tile_out[2][0][0][2] = image[8][2];
     tile_out[2][0][0][3] = image[8][3]; tile_out[2][0][0][4] = image[8][4]; tile_out[2][0][0][5] = image[8][5];
     tile_out[2][0][1][0] = image[9][0]; tile_out[2][0][1][1] = image[9][1]; tile_out[2][0][1][2] = image[9][2];
     tile_out[2][0][1][3] = image[9][3]; tile_out[2][0][1][4] = image[9][4]; tile_out[2][0][1][5] = image[9][5];
-    tile_out[2][0][2][0] = 16'b0;       tile_out[2][0][2][1] = 16'b0;       tile_out[2][0][2][2] = 16'b0;
-    tile_out[2][0][2][3] = 16'b0;       tile_out[2][0][2][4] = 16'b0;       tile_out[2][0][2][5] = 16'b0;
-    tile_out[2][0][3][0] = 16'b0;       tile_out[2][0][3][1] = 16'b0;       tile_out[2][0][3][2] = 16'b0;
-    tile_out[2][0][3][3] = 16'b0;       tile_out[2][0][3][4] = 16'b0;       tile_out[2][0][3][5] = 16'b0;
-    tile_out[2][0][4][0] = 16'b0;       tile_out[2][0][4][1] = 16'b0;       tile_out[2][0][4][2] = 16'b0;
-    tile_out[2][0][4][3] = 16'b0;       tile_out[2][0][4][4] = 16'b0;       tile_out[2][0][4][5] = 16'b0;
-    tile_out[2][0][5][0] = 16'b0;       tile_out[2][0][5][1] = 16'b0;       tile_out[2][0][5][2] = 16'b0;
-    tile_out[2][0][5][3] = 16'b0;       tile_out[2][0][5][4] = 16'b0;       tile_out[2][0][5][5] = 16'b0;
+    tile_out[2][0][2][0] = 32'b0;       tile_out[2][0][2][1] = 32'b0;       tile_out[2][0][2][2] = 32'b0;
+    tile_out[2][0][2][3] = 32'b0;       tile_out[2][0][2][4] = 32'b0;       tile_out[2][0][2][5] = 32'b0;
+    tile_out[2][0][3][0] = 32'b0;       tile_out[2][0][3][1] = 32'b0;       tile_out[2][0][3][2] = 32'b0;
+    tile_out[2][0][3][3] = 32'b0;       tile_out[2][0][3][4] = 32'b0;       tile_out[2][0][3][5] = 32'b0;
+    tile_out[2][0][4][0] = 32'b0;       tile_out[2][0][4][1] = 32'b0;       tile_out[2][0][4][2] = 32'b0;
+    tile_out[2][0][4][3] = 32'b0;       tile_out[2][0][4][4] = 32'b0;       tile_out[2][0][4][5] = 32'b0;
+    tile_out[2][0][5][0] = 32'b0;       tile_out[2][0][5][1] = 32'b0;       tile_out[2][0][5][2] = 32'b0;
+    tile_out[2][0][5][3] = 32'b0;       tile_out[2][0][5][4] = 32'b0;       tile_out[2][0][5][5] = 32'b0;
     
     // tile_out[2][1] - Bottom-middle tile
     tile_out[2][1][0][0] = image[8][4]; tile_out[2][1][0][1] = image[8][5]; tile_out[2][1][0][2] = image[8][6];
     tile_out[2][1][0][3] = image[8][7]; tile_out[2][1][0][4] = image[8][8]; tile_out[2][1][0][5] = image[8][9];
     tile_out[2][1][1][0] = image[9][4]; tile_out[2][1][1][1] = image[9][5]; tile_out[2][1][1][2] = image[9][6];
     tile_out[2][1][1][3] = image[9][7]; tile_out[2][1][1][4] = image[9][8]; tile_out[2][1][1][5] = image[9][9];
-    tile_out[2][1][2][0] = 16'b0;       tile_out[2][1][2][1] = 16'b0;       tile_out[2][1][2][2] = 16'b0;
-    tile_out[2][1][2][3] = 16'b0;       tile_out[2][1][2][4] = 16'b0;       tile_out[2][1][2][5] = 16'b0;
-    tile_out[2][1][3][0] = 16'b0;       tile_out[2][1][3][1] = 16'b0;       tile_out[2][1][3][2] = 16'b0;
-    tile_out[2][1][3][3] = 16'b0;       tile_out[2][1][3][4] = 16'b0;       tile_out[2][1][3][5] = 16'b0;
-    tile_out[2][1][4][0] = 16'b0;       tile_out[2][1][4][1] = 16'b0;       tile_out[2][1][4][2] = 16'b0;
-    tile_out[2][1][4][3] = 16'b0;       tile_out[2][1][4][4] = 16'b0;       tile_out[2][1][4][5] = 16'b0;
-    tile_out[2][1][5][0] = 16'b0;       tile_out[2][1][5][1] = 16'b0;       tile_out[2][1][5][2] = 16'b0;
-    tile_out[2][1][5][3] = 16'b0;       tile_out[2][1][5][4] = 16'b0;       tile_out[2][1][5][5] = 16'b0;
+    tile_out[2][1][2][0] = 32'b0;       tile_out[2][1][2][1] = 32'b0;       tile_out[2][1][2][2] = 32'b0;
+    tile_out[2][1][2][3] = 32'b0;       tile_out[2][1][2][4] = 32'b0;       tile_out[2][1][2][5] = 32'b0;
+    tile_out[2][1][3][0] = 32'b0;       tile_out[2][1][3][1] = 32'b0;       tile_out[2][1][3][2] = 32'b0;
+    tile_out[2][1][3][3] = 32'b0;       tile_out[2][1][3][4] = 32'b0;       tile_out[2][1][3][5] = 32'b0;
+    tile_out[2][1][4][0] = 32'b0;       tile_out[2][1][4][1] = 32'b0;       tile_out[2][1][4][2] = 32'b0;
+    tile_out[2][1][4][3] = 32'b0;       tile_out[2][1][4][4] = 32'b0;       tile_out[2][1][4][5] = 32'b0;
+    tile_out[2][1][5][0] = 32'b0;       tile_out[2][1][5][1] = 32'b0;       tile_out[2][1][5][2] = 32'b0;
+    tile_out[2][1][5][3] = 32'b0;       tile_out[2][1][5][4] = 32'b0;       tile_out[2][1][5][5] = 32'b0;
     
     // tile_out[2][2] - Bottom-right tile
     tile_out[2][2][0][0] = image[8][8];  tile_out[2][2][0][1] = image[8][9];  tile_out[2][2][0][2] = image[8][10];
-    tile_out[2][2][0][3] = image[8][11]; tile_out[2][2][0][4] = 16'b0;        tile_out[2][2][0][5] = 16'b0;
+    tile_out[2][2][0][3] = image[8][11]; tile_out[2][2][0][4] = 32'b0;        tile_out[2][2][0][5] = 32'b0;
     tile_out[2][2][1][0] = image[9][8];  tile_out[2][2][1][1] = image[9][9];  tile_out[2][2][1][2] = image[9][10];
-    tile_out[2][2][1][3] = image[9][11]; tile_out[2][2][1][4] = 16'b0;        tile_out[2][2][1][5] = 16'b0;
-    tile_out[2][2][2][0] = 16'b0;        tile_out[2][2][2][1] = 16'b0;        tile_out[2][2][2][2] = 16'b0;
-    tile_out[2][2][2][3] = 16'b0;        tile_out[2][2][2][4] = 16'b0;        tile_out[2][2][2][5] = 16'b0;
-    tile_out[2][2][3][0] = 16'b0;        tile_out[2][2][3][1] = 16'b0;        tile_out[2][2][3][2] = 16'b0;
-    tile_out[2][2][3][3] = 16'b0;        tile_out[2][2][3][4] = 16'b0;        tile_out[2][2][3][5] = 16'b0;
-    tile_out[2][2][4][0] = 16'b0;        tile_out[2][2][4][1] = 16'b0;        tile_out[2][2][4][2] = 16'b0;
-    tile_out[2][2][4][3] = 16'b0;        tile_out[2][2][4][4] = 16'b0;        tile_out[2][2][4][5] = 16'b0;
-    tile_out[2][2][5][0] = 16'b0;        tile_out[2][2][5][1] = 16'b0;        tile_out[2][2][5][2] = 16'b0;
-    tile_out[2][2][5][3] = 16'b0;        tile_out[2][2][5][4] = 16'b0;        tile_out[2][2][5][5] = 16'b0;
+    tile_out[2][2][1][3] = image[9][11]; tile_out[2][2][1][4] = 32'b0;        tile_out[2][2][1][5] = 32'b0;
+    tile_out[2][2][2][0] = 32'b0;        tile_out[2][2][2][1] = 32'b0;        tile_out[2][2][2][2] = 32'b0;
+    tile_out[2][2][2][3] = 32'b0;        tile_out[2][2][2][4] = 32'b0;        tile_out[2][2][2][5] = 32'b0;
+    tile_out[2][2][3][0] = 32'b0;        tile_out[2][2][3][1] = 32'b0;        tile_out[2][2][3][2] = 32'b0;
+    tile_out[2][2][3][3] = 32'b0;        tile_out[2][2][3][4] = 32'b0;        tile_out[2][2][3][5] = 32'b0;
+    tile_out[2][2][4][0] = 32'b0;        tile_out[2][2][4][1] = 32'b0;        tile_out[2][2][4][2] = 32'b0;
+    tile_out[2][2][4][3] = 32'b0;        tile_out[2][2][4][4] = 32'b0;        tile_out[2][2][4][5] = 32'b0;
+    tile_out[2][2][5][0] = 32'b0;        tile_out[2][2][5][1] = 32'b0;        tile_out[2][2][5][2] = 32'b0;
+    tile_out[2][2][5][3] = 32'b0;        tile_out[2][2][5][4] = 32'b0;        tile_out[2][2][5][5] = 32'b0;
 end
 
 endmodule

@@ -4,9 +4,9 @@ module tile_controller (
     input  logic        clk,
     input  logic        rst_n,
     input  logic        start,
-    input  logic [15:0] kernel_in  [0:2][0:2],  // 3x3 kernel input
-    input  logic [15:0] tile_in    [0:5][0:5],  // 6x6 tile input
-    output logic [15:0] result_out [0:3][0:3],  // 4x4 result output
+    input  logic [31:0] kernel_in  [0:2][0:2],  // 3x3 kernel input
+    input  logic [31:0] tile_in    [0:5][0:5],  // 6x6 tile input
+    output logic [31:0] result_out [0:3][0:3],  // 4x4 result output
     output logic        done
 );
 
@@ -20,33 +20,33 @@ module tile_controller (
     
     // KTU signals
     logic ktu_start;
-    logic [15:0] ktu_kernel_in [0:2][0:2];
-    logic [15:0] ktu_kernel_out [0:5][0:5];
+    logic [31:0] ktu_kernel_in [0:2][0:2];
+    logic [31:0] ktu_kernel_out [0:5][0:5];
     logic ktu_done;
     
     // TTU signals
     logic ttu_start;
-    logic [15:0] ttu_tile_in [0:5][0:5];
-    logic [15:0] ttu_tile_out [0:5][0:5];
+    logic [31:0] ttu_tile_in [0:5][0:5];
+    logic [31:0] ttu_tile_out [0:5][0:5];
     logic ttu_done;
     
     // Pointwise multiplication signals
     logic mult_start;
-    logic [15:0] mult_a [6][6];
-    logic [15:0] mult_b [6][6];
-    logic [31:0] mult_c [6][6];
+    logic [31:0] mult_a [6][6];
+    logic [31:0] mult_b [6][6];
+    logic [63:0] mult_c [6][6];
     logic mult_done;
     
     // RTU signals
     logic rtu_start;
-    logic [15:0] rtu_matrix_in [0:5][0:5];
-    logic [15:0] rtu_matrix_out [0:3][0:3];
+    logic [31:0] rtu_matrix_in [0:5][0:5];
+    logic [31:0] rtu_matrix_out [0:3][0:3];
     logic rtu_done;
     
     // Internal registers
-    logic [15:0] U [0:5][0:5];  // Transformed kernel
-    logic [15:0] V [0:5][0:5];  // Transformed tile
-    logic [15:0] M [0:5][0:5];  // Pointwise product result
+    logic [31:0] U [0:5][0:5];  // Transformed kernel
+    logic [31:0] V [0:5][0:5];  // Transformed tile
+    logic [31:0] M [0:5][0:5];  // Pointwise product result
     
     // FSM
     always_ff @(posedge clk or negedge rst_n) begin
@@ -107,15 +107,15 @@ module tile_controller (
             mult_start <= 1'b0;
             for (int i = 0; i < 3; i++) begin
                 for (int j = 0; j < 3; j++) begin
-                    ktu_kernel_in[i][j] <= 16'd0;
+                    ktu_kernel_in[i][j] <= 32'd0;
                 end
             end
             for (int i = 0; i < 6; i++) begin
                 for (int j = 0; j < 6; j++) begin
-                    ttu_tile_in[i][j] <= 16'd0;
-                    U[i][j] <= 16'd0;
-                    V[i][j] <= 16'd0;
-                    M[i][j] <= 16'd0;
+                    ttu_tile_in[i][j] <= 32'd0;
+                    U[i][j] <= 32'd0;
+                    V[i][j] <= 32'd0;
+                    M[i][j] <= 32'd0;
                 end
             end
         end else begin
@@ -132,9 +132,9 @@ module tile_controller (
                         ttu_tile_in <= tile_in;
                         for (int i = 0; i < 6; i++) begin
                             for (int j = 0; j < 6; j++) begin
-                                U[i][j] <= 16'd0;
-                                V[i][j] <= 16'd0;
-                                M[i][j] <= 16'd0;
+                                U[i][j] <= 32'd0;
+                                V[i][j] <= 32'd0;
+                                M[i][j] <= 32'd0;
                             end
                         end
                     end
@@ -163,10 +163,10 @@ module tile_controller (
                     end
                     
                     if (mult_done) begin
-                        // Convert 32-bit to 16-bit and latch
+                        // Convert 64-bit to 32-bit and latch
                         for (int i = 0; i < 6; i++) begin
                             for (int j = 0; j < 6; j++) begin
-                                M[i][j] <= mult_c[i][j][15:0];
+                                M[i][j] <= mult_c[i][j][31:0];
                             end
                         end
                     end

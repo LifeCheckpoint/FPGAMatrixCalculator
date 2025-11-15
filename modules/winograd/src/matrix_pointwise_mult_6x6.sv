@@ -2,16 +2,16 @@ module matrix_pointwise_mult_6x6 (
     input  logic        clk,
     input  logic        rst_n,
     input  logic        start,
-    input  logic [15:0] a [6][6],
-    input  logic [15:0] b [6][6],
-    output logic [31:0] c [6][6],
+    input  logic [31:0] a [6][6],
+    input  logic [31:0] b [6][6],
+    output logic [63:0] c [6][6],
     output logic        done
 );
 
     parameter LATENCY = 3;
     
-    logic [31:0] mult [6][6];
-    logic [31:0] pipe [LATENCY-1:0][6][6];
+    logic [63:0] mult [6][6];
+    logic [63:0] pipe [LATENCY-1:0][6][6];
     logic [LATENCY:0] valid;
     
     assign valid[0] = start;
