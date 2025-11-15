@@ -12,7 +12,9 @@ module winograd_conv_10x12 (
 
     typedef enum logic [2:0] {
         ST_IDLE,
+        ST_PREP,
         ST_LOAD,
+        ST_WAIT_CLEAR,
         ST_WAIT,
         ST_WRITE,
         ST_FINISH
@@ -83,15 +85,29 @@ module winograd_conv_10x12 (
                         image_reg <= image_in;
                         result_tiles <= '{default: 32'd0};
                         round_idx <= 4'd0;
-                        state <= ST_LOAD;
+                        state <= ST_PREP;
                     end
+                end
+
+                ST_PREP: begin
+                    done <= 1'b0;
+                    state <= ST_LOAD;
                 end
 
                 ST_LOAD: begin
                     done <= 1'b0;
                     tc_kernel_in <= kernel_reg;
                     tc_start <= 1'b1;
-                    state <= ST_WAIT;
+                    state <= ST_WAIT_CLEAR;
+                end
+
+                ST_WAIT_CLEAR: begin
+                    done <= 1'b0;
+                    tc_start <= 1'b0;
+                    // Wait for tc_done to clear before waiting for completion
+                    if (!tc_done) begin
+                        state <= ST_WAIT;
+                    end
                 end
 
                 ST_WAIT: begin
@@ -110,7 +126,7 @@ module winograd_conv_10x12 (
                         state <= ST_FINISH;
                     end else begin
                         round_idx <= round_idx + 4'd1;
-                        state <= ST_LOAD;
+                        state <= ST_PREP;
                     end
                 end
 
@@ -122,7 +138,7 @@ module winograd_conv_10x12 (
                         image_reg <= image_in;
                         result_tiles <= '{default: 32'd0};
                         round_idx <= 4'd0;
-                        state <= ST_LOAD;
+                        state <= ST_PREP;
                     end else begin
                         state <= ST_IDLE;
                     end

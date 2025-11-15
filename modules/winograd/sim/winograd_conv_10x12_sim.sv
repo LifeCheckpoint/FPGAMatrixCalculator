@@ -19,6 +19,21 @@ module winograd_conv_10x12_sim;
         .result_out(result_out),
         .done(done)
     );
+    
+    // Debug monitor
+    always @(posedge clk) begin
+        if (dut.state == dut.ST_LOAD) begin
+            $display("Time=%0t: LOAD state - round_idx=%0d, tile_i=%0d, tile_j=%0d",
+                     $time, dut.round_idx, dut.tile_i, dut.tile_j);
+        end
+        if (dut.state == dut.ST_WRITE) begin
+            $display("Time=%0t: WRITE state - round_idx=%0d, tile_i=%0d, tile_j=%0d, writing to result_tiles[%0d][%0d]",
+                     $time, dut.round_idx, dut.tile_i, dut.tile_j, dut.tile_i, dut.tile_j);
+        end
+        if (dut.tc_inst.state == dut.tc_inst.S_IDLE && dut.tc_start) begin
+            $display("Time=%0t: tile_controller START - Sampling tile_in", $time);
+        end
+    end
 
     initial begin
         clk = 0;
@@ -61,7 +76,29 @@ module winograd_conv_10x12_sim;
             $write("\n");
         end
 
-        #1000;
+        wait(done);
+        
+        $display("\nDEBUG: Checking internal result_tiles:");
+        for (int ti = 0; ti < 3; ti++) begin
+            for (int tj = 0; tj < 3; tj++) begin
+                $display("Tile[%0d][%0d]:", ti, tj);
+                for (int i = 0; i < 4; i++) begin
+                    $write("  ");
+                    for (int j = 0; j < 4; j++) begin
+                        $write("%d ", dut.result_tiles[ti][tj][i][j]);
+                    end
+                    $write("\n");
+                end
+            end
+        end
+        
+        $display("\nDEBUG: Transform output (before division):");
+        for (int i = 0; i < 8; i++) begin
+            for (int j = 0; j < 10; j++) begin
+                $write("%d ", dut.transform_out[i][j]);
+            end
+            $write("\n");
+        end
 
         $display("\nOutput Result (8x10):");
         for (int i = 0; i < 8; i++) begin
