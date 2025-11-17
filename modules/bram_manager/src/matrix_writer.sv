@@ -1,65 +1,65 @@
 // Matrix Writer Module
-// 负责将矩阵数据（包含元数据）写入到指定的BRAM矩阵块中
+// Responsible for writing matrix data (including metadata) to specified BRAM matrix blocks
 
 module matrix_writer #(
-    parameter MAX_MEMORY_MATRIXES = 8,      // 最大矩阵块数量
-    parameter BLOCK_SIZE = 1152,             // 每个矩阵块大小（32bit字）
-    parameter DATA_WIDTH = 32,               // 数据位宽
-    parameter ADDR_WIDTH = 14                // 地址位宽 ($clog2(9216))
+    parameter MAX_MEMORY_MATRIXES = 8,      // Maximum number of matrix blocks
+    parameter BLOCK_SIZE = 1152,             // Size of each matrix block (32-bit words)
+    parameter DATA_WIDTH = 32,               // Data width
+    parameter ADDR_WIDTH = 14                // Address width ($clog2(9216))
 ) (
     input  logic                     clk,
     input  logic                     rst_n,
     
-    // 写入请求接口
-    input  logic                     write_req,        // 写入请求
-    input  logic [2:0]               matrix_id,        // 矩阵编号 (0~7)
-    input  logic [7:0]               rows,             // 真实行数
-    input  logic [7:0]               cols,             // 真实列数
-    input  logic [63:0]              matrix_name,      // 矩阵名称（8个字符）
-    input  logic [DATA_WIDTH-1:0]    data_in,          // 矩阵数据输入
-    input  logic                     data_valid,       // 数据有效信号
-    output logic                     write_done,       // 写入完成
-    output logic                     writer_ready,     // 写入器就绪
+    // Write request interface
+    input  logic                     write_req,        // Write request
+    input  logic [2:0]               matrix_id,        // Matrix ID (0~7)
+    input  logic [7:0]               rows,             // Actual row count
+    input  logic [7:0]               cols,             // Actual column count
+    input  logic [63:0]              matrix_name,      // Matrix name (8 characters)
+    input  logic [DATA_WIDTH-1:0]    data_in,          // Matrix data input
+    input  logic                     data_valid,       // Data valid signal
+    output logic                     write_done,       // Write complete
+    output logic                     writer_ready,     // Writer ready
     
-    // BRAM接口
+    // BRAM interface
     output logic                     bram_wr_en,
     output logic [ADDR_WIDTH-1:0]    bram_addr,
     output logic [DATA_WIDTH-1:0]    bram_din
 );
 
-    // 状态机定义
+    // State machine definition
     typedef enum logic [2:0] {
         IDLE,
-        WRITE_META0,      // 写元数据字0（行数、列数）
-        WRITE_META1,      // 写元数据字1（名称低32位）
-        WRITE_META2,      // 写元数据字2（名称高32位）
-        WRITE_DATA,       // 写矩阵数据
+        WRITE_META0,      // Write metadata word 0 (rows, columns)
+        WRITE_META1,      // Write metadata word 1 (name low 32 bits)
+        WRITE_META2,      // Write metadata word 2 (name high 32 bits)
+        WRITE_DATA,       // Write matrix data
         DONE
     } state_t;
     
     state_t current_state, next_state;
     
-    // 内部寄存器
+    // Internal registers
     logic [2:0]              saved_matrix_id;
     logic [7:0]              saved_rows;
     logic [7:0]              saved_cols;
     logic [63:0]             saved_name;
-    logic [ADDR_WIDTH-1:0]   base_addr;        // 当前矩阵块基地址
-    logic [ADDR_WIDTH-1:0]   write_addr;       // 当前写地址
-    logic [10:0]             data_count;       // 已写入的数据个数
-    logic [10:0]             total_elements;   // 总元素数量
+    logic [ADDR_WIDTH-1:0]   base_addr;        // Current matrix block base address
+    logic [ADDR_WIDTH-1:0]   write_addr;       // Current write address
+    logic [10:0]             data_count;       // Number of data written
+    logic [10:0]             total_elements;   // Total number of elements
     
-    // 计算基地址
+    // Calculate base address
     always_comb begin
         base_addr = saved_matrix_id * BLOCK_SIZE;
     end
     
-    // 计算总元素数量
+    // Calculate total number of elements
     always_comb begin
         total_elements = saved_rows * saved_cols;
     end
     
-    // 状态机：时序逻辑
+    // State machine: sequential logic
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             current_state <= IDLE;
@@ -68,7 +68,7 @@ module matrix_writer #(
         end
     end
     
-    // 状态机：组合逻辑
+    // State machine: combinational logic
     always_comb begin
         next_state = current_state;
         
@@ -105,7 +105,7 @@ module matrix_writer #(
         endcase
     end
     
-    // 数据路径控制
+    // Data path control
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             saved_matrix_id <= 3'd0;
@@ -138,21 +138,21 @@ module matrix_writer #(
                 
                 WRITE_META0: begin
                     bram_wr_en <= 1'b1;
-                    bram_addr <= base_addr;  // 地址0：元数据0
-                    bram_din <= {saved_rows, saved_cols, 16'd0};  // [31:24]=行数, [23:16]=列数
+                    bram_addr <= base_addr;  // Address 0: metadata 0
+                    bram_din <= {saved_rows, saved_cols, 16'd0};  // [31:24]=rows, [23:16]=columns
                 end
                 
                 WRITE_META1: begin
                     bram_wr_en <= 1'b1;
-                    bram_addr <= base_addr + 1;  // 地址1：名称低32位
+                    bram_addr <= base_addr + 1;  // Address 1: name low 32 bits
                     bram_din <= saved_name[31:0];
                 end
                 
                 WRITE_META2: begin
                     bram_wr_en <= 1'b1;
-                    bram_addr <= base_addr + 2;  // 地址2：名称高32位
+                    bram_addr <= base_addr + 2;  // Address 2: name high 32 bits
                     bram_din <= saved_name[63:32];
-                    write_addr <= base_addr + 3;  // 下一次写入数据的起始地址
+                    write_addr <= base_addr + 3;  // Start address for next data write
                 end
                 
                 WRITE_DATA: begin

@@ -1,69 +1,66 @@
-// Matrix Reader Module
-// 负责从指定的BRAM矩阵块中读取矩阵数据（包含元数据）
-
 module matrix_reader #(
-    parameter MAX_MEMORY_MATRIXES = 8,      // 最大矩阵块数量
-    parameter BLOCK_SIZE = 1152,             // 每个矩阵块大小（32bit字）
-    parameter DATA_WIDTH = 32,               // 数据位宽
-    parameter ADDR_WIDTH = 14                // 地址位宽 ($clog2(9216))
+    parameter MAX_MEMORY_MATRIXES = 8,  // Max Num of Matrix Blocks
+    parameter BLOCK_SIZE = 1152,        // Size of Each Matrix Block (32bit words)
+    parameter DATA_WIDTH = 32,          // Data Width
+    parameter ADDR_WIDTH = 14           // Address Width ($clog2(9216))
 ) (
     input  logic                     clk,
     input  logic                     rst_n,
     
-    // 读取请求接口
-    input  logic                     read_req,         // 读取请求
-    input  logic [2:0]               matrix_id,        // 矩阵编号 (0~7)
-    input  logic                     read_data_req,    // 请求读取下一个矩阵数据
-    output logic                     read_done,        // 读取完成
-    output logic                     reader_ready,     // 读取器就绪
+    // Read request interface
+    input  logic                     read_req,         // Read request
+    input  logic [2:0]               matrix_id,        // Matrix ID (0~7)
+    input  logic                     read_data_req,    // Request to read next matrix data
+    output logic                     read_done,        // Read complete
+    output logic                     reader_ready,     // Reader ready
     
-    // 元数据输出
-    output logic [7:0]               rows,             // 真实行数
-    output logic [7:0]               cols,             // 真实列数
-    output logic [63:0]              matrix_name,      // 矩阵名称（8个字符）
-    output logic                     meta_valid,       // 元数据有效
+    // Metadata output
+    output logic [7:0]               rows,             // Actual row count
+    output logic [7:0]               cols,             // Actual column count
+    output logic [63:0]              matrix_name,      // Matrix name (8 characters)
+    output logic                     meta_valid,       // Metadata valid
     
-    // 矩阵数据输出
-    output logic [DATA_WIDTH-1:0]    data_out,         // 矩阵数据输出
-    output logic                     data_valid,       // 数据有效信号
+    // Matrix data output
+    output logic [DATA_WIDTH-1:0]    data_out,         // Matrix data output
+    output logic                     data_valid,       // Data valid signal
     
-    // BRAM接口
+    // BRAM interface
     output logic [ADDR_WIDTH-1:0]    bram_addr,
     input  logic [DATA_WIDTH-1:0]    bram_dout
 );
 
-    // 状态机定义
+    // State machine definition
     typedef enum logic [2:0] {
         IDLE,
-        READ_META0,       // 发起读取元数据字0
-        WAIT_META0,       // 等待元数据字0
-        READ_META1,       // 发起读取元数据字1（名称低32位）
-        WAIT_META1,       // 等待元数据字1
-        READ_META2,       // 发起读取元数据字2（名称高32位）
-        WAIT_META2,       // 等待元数据字2
-        READ_DATA,        // 读取矩阵数据
+        READ_META0,       // Initiate read metadata word 0
+        WAIT_META0,       // Wait for metadata word 0
+        READ_META1,       // Initiate read metadata word 1 (name low 32 bits)
+        WAIT_META1,       // Wait for metadata word 1
+        READ_META2,       // Initiate read metadata word 2 (name high 32 bits)
+        WAIT_META2,       // Wait for metadata word 2
+        READ_DATA,        // Read matrix data
         DONE
     } state_t;
     
     state_t current_state, next_state;
     
-    // 内部寄存器
+    // Internal registers
     logic [2:0]              saved_matrix_id;
     logic [7:0]              saved_rows;
     logic [7:0]              saved_cols;
     logic [31:0]             name_low;
     logic [31:0]             name_high;
-    logic [ADDR_WIDTH-1:0]   base_addr;        // 当前矩阵块基地址
-    logic [ADDR_WIDTH-1:0]   read_addr;        // 当前读地址
-    logic [10:0]             data_count;       // 已读取的数据个数
-    logic [10:0]             total_elements;   // 总元素数量
+    logic [ADDR_WIDTH-1:0]   base_addr;        // Current matrix block base address
+    logic [ADDR_WIDTH-1:0]   read_addr;        // Current read address
+    logic [10:0]             data_count;       // Number of data read
+    logic [10:0]             total_elements;   // Total number of elements
     
-    // 计算基地址
+    // Calculate base address
     always_comb begin
         base_addr = saved_matrix_id * BLOCK_SIZE;
     end
     
-    // 状态机：时序逻辑
+    // State machine: sequential logic
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             current_state <= IDLE;
@@ -72,7 +69,7 @@ module matrix_reader #(
         end
     end
     
-    // 状态机：组合逻辑
+    // State machine: combinational logic
     always_comb begin
         next_state = current_state;
         
@@ -121,7 +118,7 @@ module matrix_reader #(
         endcase
     end
     
-    // 数据路径控制
+    // Data path control
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             saved_matrix_id <= 3'd0;
@@ -156,18 +153,18 @@ module matrix_reader #(
                 end
                 
                 READ_META0: begin
-                    bram_addr <= base_addr;  // 地址0：元数据0
+                    bram_addr <= base_addr;  // Address 0: metadata 0
                 end
                 
                 WAIT_META0: begin
-                    // BRAM输出延迟1个周期，此时读取元数据0
+                    // BRAM output delay 1 cycle, read metadata 0 now
                     saved_rows <= bram_dout[31:24];
                     saved_cols <= bram_dout[23:16];
                     total_elements <= bram_dout[31:24] * bram_dout[23:16];
                 end
                 
                 READ_META1: begin
-                    bram_addr <= base_addr + 1;  // 地址1：名称低32位
+                    bram_addr <= base_addr + 1;  // Address 1: name low 32 bits
                 end
                 
                 WAIT_META1: begin
@@ -175,13 +172,13 @@ module matrix_reader #(
                 end
                 
                 READ_META2: begin
-                    bram_addr <= base_addr + 2;  // 地址2：名称高32位
-                    read_addr <= base_addr + 3;  // 准备读取数据的起始地址
+                    bram_addr <= base_addr + 2;  // Address 2: name high 32 bits
+                    read_addr <= base_addr + 3;  // Prepare start address for data reading
                 end
                 
                 WAIT_META2: begin
                     name_high <= bram_dout;
-                    // 输出元数据
+                    // Output metadata
                     rows <= saved_rows;
                     cols <= saved_cols;
                     matrix_name <= {bram_dout, name_low};
@@ -192,13 +189,13 @@ module matrix_reader #(
                     meta_valid <= 1'b0;
                     
                     if (read_data_req && (data_count < total_elements)) begin
-                        // 发起读取请求
+                        // Initiate read request
                         bram_addr <= read_addr;
                         read_addr <= read_addr + 1;
                         data_count <= data_count + 1;
-                        data_valid <= 1'b0;  // 当前周期数据无效
+                        data_valid <= 1'b0;  // Data invalid in current cycle
                     end else if (data_count > 0 && data_count <= total_elements) begin
-                        // 读取数据延迟1个周期，输出上一次请求的数据
+                        // Read data delay 1 cycle, output data from previous request
                         data_out <= bram_dout;
                         data_valid <= 1'b1;
                     end else begin
