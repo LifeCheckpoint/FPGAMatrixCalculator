@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>矩阵运算 - FPGA 矩阵计算器</title>
+    <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <h1>⚡ 矩阵运算</h1>
+            <button class="back-button" onclick="window.location.href='../index.html'">返回主页</button>
+        </div>
+
+        <div class="page-content">
+            <h2 style="color: #2e7d32; margin-bottom: 20px;">执行矩阵计算操作</h2>
+            <p style="color: #66bb6a; margin-bottom: 30px;">选择运算类型并执行FPGA加速计算</p>
+            
+            <div style="display: grid; gap: 25px;">
+                <div>
+                    <label style="display: block; margin-bottom: 10px; color: #2e7d32; font-weight: 500;">运算类型</label>
+                    <select style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 320px; font-size: 1rem;">
+                        <option>矩阵乘法 (A × B)</option>
+                        <option>矩阵加法 (A + B)</option>
+                        <option>矩阵减法 (A - B)</option>
+                        <option>矩阵转置</option>
+                        <option>Winograd 卷积</option>
+                        <option>逐元素乘法</option>
+                    </select>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 10px; color: #2e7d32; font-weight: 500;">输入矩阵 A</label>
+                        <select style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 100%; font-size: 1rem;">
+                            <option>未选择</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 10px; color: #2e7d32; font-weight: 500;">输入矩阵 B</label>
+                        <select style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 100%; font-size: 1rem;">
+                            <option>未选择</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="background: #f1f8f4; padding: 25px; border-radius: 12px; border: 2px solid #c8e6c9;">
+                    <h3 style="color: #2e7d32; margin-bottom: 15px;">运算状态</h3>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 0.95rem;">
+                        <div><span style="color: #66bb6a;">状态:</span> <span style="color: #2e7d32; font-weight: 500;">就绪</span></div>
+                        <div><span style="color: #66bb6a;">进度:</span> <span style="color: #2e7d32; font-weight: 500;">0%</span></div>
+                        <div><span style="color: #66bb6a;">预计时间:</span> <span style="color: #2e7d32; font-weight: 500;">-</span></div>
+                        <div><span style="color: #66bb6a;">已用时间:</span> <span style="color: #2e7d32; font-weight: 500;">0ms</span></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <button style="background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%); color: white; border: none; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500; margin-right: 10px;">开始运算</button>
+                    <button style="background: white; color: #f57c00; border: 2px solid #f57c00; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500; margin-right: 10px;">暂停</button>
+                    <button style="background: white; color: #e53935; border: 2px solid #e53935; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500;">停止</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

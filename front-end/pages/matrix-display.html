@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>矩阵展示 - FPGA 矩阵计算器</title>
+    <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <h1>📊 矩阵展示</h1>
+            <button class="back-button" onclick="window.location.href='../index.html'">返回主页</button>
+        </div>
+
+        <div class="page-content">
+            <h2 style="color: #2e7d32; margin-bottom: 20px;">可视化矩阵内容</h2>
+            <p style="color: #66bb6a; margin-bottom: 30px;">查看当前存储的矩阵数据</p>
+            
+            <div style="display: grid; gap: 25px;">
+                <div>
+                    <label style="display: block; margin-bottom: 10px; color: #2e7d32; font-weight: 500;">选择矩阵</label>
+                    <select style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 320px; font-size: 1rem;">
+                        <option>矩阵 A (未定义)</option>
+                        <option>矩阵 B (未定义)</option>
+                        <option>结果矩阵 (未定义)</option>
+                    </select>
+                </div>
+                
+                <div style="background: #f1f8f4; padding: 30px; border-radius: 12px; border: 2px solid #c8e6c9;">
+                    <div style="text-align: center; color: #66bb6a; padding: 40px;">
+                        <div style="font-size: 3rem; margin-bottom: 10px;">📊</div>
+                        <p>暂无矩阵数据</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">请先输入或生成矩阵</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button style="background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%); color: white; border: none; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500;">导出矩阵</button>
+                    <button style="background: white; color: #43a047; border: 2px solid #43a047; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500;">打印矩阵</button>
+                    <button style="background: white; color: #e53935; border: 2px solid #e53935; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500;">清空矩阵</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

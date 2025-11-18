@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>矩阵生成 - FPGA 矩阵计算器</title>
+    <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <h1>🎲 矩阵生成</h1>
+            <button class="back-button" onclick="window.location.href='../index.html'">返回主页</button>
+        </div>
+
+        <div class="page-content">
+            <h2 style="color: #2e7d32; margin-bottom: 20px;">自动生成测试矩阵</h2>
+            <p style="color: #66bb6a; margin-bottom: 30px;">快速生成用于测试的随机矩阵或特殊矩阵</p>
+            
+            <div style="display: grid; gap: 25px;">
+                <div>
+                    <label style="display: block; margin-bottom: 10px; color: #2e7d32; font-weight: 500;">矩阵维度</label>
+                    <input type="number" placeholder="行数" style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 150px; margin-right: 10px;" />
+                    <span style="color: #66bb6a;">×</span>
+                    <input type="number" placeholder="列数" style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 150px; margin-left: 10px;" />
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 10px; color: #2e7d32; font-weight: 500;">生成类型</label>
+                    <select style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 320px; font-size: 1rem;">
+                        <option>随机矩阵</option>
+                        <option>单位矩阵</option>
+                        <option>零矩阵</option>
+                        <option>对角矩阵</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 10px; color: #2e7d32; font-weight: 500;">数值范围</label>
+                    <input type="number" placeholder="最小值" style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 150px; margin-right: 10px;" />
+                    <span style="color: #66bb6a;">至</span>
+                    <input type="number" placeholder="最大值" style="padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; width: 150px; margin-left: 10px;" />
+                </div>
+                
+                <div>
+                    <button style="background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%); color: white; border: none; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500; margin-right: 10px;">生成矩阵</button>
+                    <button style="background: white; color: #43a047; border: 2px solid #43a047; padding: 14px 32px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-weight: 500;">重新生成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

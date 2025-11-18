@@ -1,20 +1,58 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="zh-CN">
+<head>
     <meta charset="UTF-8" />
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
-    />
-    <meta
-      http-equiv="X-Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
-    />
-    <title>Hello from Electron renderer!</title>
-  </head>
-  <body>
-    <h1>Hello from Electron renderer!</h1>
-    <p>👋</p>
-  </body>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FPGA 矩阵计算器</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>FPGA 矩阵计算器</h1>
+            <p class="subtitle">高性能矩阵运算工具</p>
+        </header>
+
+        <main class="main-content">
+            <div class="cards-grid">
+                <div class="card" data-page="matrix-input">
+                    <div class="card-icon">📝</div>
+                    <h2 class="card-title">矩阵输入</h2>
+                    <p class="card-description">手动输入矩阵数据</p>
+                </div>
+
+                <div class="card" data-page="matrix-generate">
+                    <div class="card-icon">🎲</div>
+                    <h2 class="card-title">矩阵生成</h2>
+                    <p class="card-description">自动生成测试矩阵</p>
+                </div>
+
+                <div class="card" data-page="matrix-display">
+                    <div class="card-icon">📊</div>
+                    <h2 class="card-title">矩阵展示</h2>
+                    <p class="card-description">可视化矩阵内容</p>
+                </div>
+
+                <div class="card" data-page="matrix-compute">
+                    <div class="card-icon">⚡</div>
+                    <h2 class="card-title">矩阵运算</h2>
+                    <p class="card-description">执行矩阵计算操作</p>
+                </div>
+
+                <div class="card" data-page="settings">
+                    <div class="card-icon">⚙️</div>
+                    <h2 class="card-title">设置配置</h2>
+                    <p class="card-description">系统参数与配置</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>FPGA 矩阵计算器 v1.0.0</p>
+        </footer>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
 </html>
