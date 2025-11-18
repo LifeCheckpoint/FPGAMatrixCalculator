@@ -1,0 +1,138 @@
+/* 矩阵展示页面样式 */
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.select-section {
+    margin-bottom: 10px;
+}
+
+.section-label {
+    display: block;
+    margin-bottom: 10px;
+    color: #2e7d32;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.matrix-select {
+    padding: 12px 16px;
+    border: 2px solid #c8e6c9;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.matrix-select:hover {
+    border-color: #66bb6a;
+}
+
+.matrix-select:focus {
+    outline: none;
+    border-color: #43a047;
+    box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.1);
+}
+
+/* 显示区域 */
+.display-area {
+    background: #f1f8f4;
+    padding: 30px;
+    border-radius: 12px;
+    border: 2px solid #c8e6c9;
+    transition: opacity 0.3s ease;
+}
+
+.display-area.hidden {
+    display: none;
+}
+
+/* 矩阵信息 */
+.matrix-info {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #c8e6c9;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-label {
+    color: #2e7d32;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.info-value {
+    color: #1b5e20;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+/* 矩阵容器 */
+.matrix-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.katex-display {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* 空状态 */
+.empty-state {
+    background: #f1f8f4;
+    padding: 60px 30px;
+    border-radius: 12px;
+    border: 2px solid #c8e6c9;
+    text-align: center;
+}
+
+.empty-state.hidden {
+    display: none;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 15px;
+    opacity: 0.7;
+}
+
+.empty-text {
+    color: #66bb6a;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .matrix-info {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .matrix-container {
+        padding: 15px;
+    }
+    
+    .katex-display {
+        font-size: 0.9rem;
+    }
+}
