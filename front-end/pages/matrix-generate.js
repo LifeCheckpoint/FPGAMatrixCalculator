@@ -133,18 +133,36 @@ function handleGenerate() {
 
     console.log('生成的矩阵数据:', results);
     
-    // TODO: 这里可以添加实际的数据发送逻辑
-    // 例如通过 IPC 发送到主进程，然后发送到后端服务器
+    // 发送数据到后端
+    const timeoutId = setTimeout(() => {
+        alert('后端响应超时（2秒无响应）');
+    }, 2000);
     
-    // 显示成功消息
-    const matrixNames = results.map(r => `矩阵${r.id}`).join('、');
-    alert(`成功生成 ${matrixNames} (${rows}×${cols})\n数值范围: ${minValue} ~ ${maxValue}\n数据已打印到控制台`);
-    
-    // 生成成功，返回主页面
-    document.body.style.opacity = '0';
-    setTimeout(() => {
-        window.location.href = '../index.html';
-    }, 300);
+    fetch('http://127.0.0.1:11459/api/matrix/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(results)
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearTimeout(timeoutId);
+        if (data.success) {
+            const matrixNames = results.map(r => `矩阵${r.id}`).join('、');
+            alert(`成功生成 ${matrixNames} (${rows}×${cols})\n数值范围: ${minValue} ~ ${maxValue}`);
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 300);
+        } else {
+            alert('提交失败: ' + (data.error || '未知错误'));
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        alert('网络错误: ' + error.message);
+    });
 }
 
 /**

@@ -128,34 +128,87 @@ function matrixToLatex(matrix) {
  * @param {string} matrixId - 矩阵ID（ans 或 1-7）
  */
 function displayMatrix(matrixId) {
-    const matrixData = placeholderMatrices[matrixId];
-    
-    if (!matrixData) {
-        // 如果没有数据，显示空状态
+    // 从后端获取矩阵数据
+    const timeoutId = setTimeout(() => {
+        alert('后端响应超时（2秒无响应）');
         showEmptyState();
-        return;
-    }
+    }, 2000);
     
-    // 更新矩阵信息
-    matrixNameElement.textContent = matrixData.name;
-    matrixDimensionElement.textContent = `${matrixData.rows} × ${matrixData.cols}`;
-    
-    // 生成 LaTeX 并渲染
-    const latex = matrixToLatex(matrixData.data);
-    
-    try {
-        katex.render(latex, matrixDisplayElement, {
-            displayMode: true,
-            throwOnError: false
-        });
-    } catch (error) {
-        console.error('KaTeX 渲染错误:', error);
-        matrixDisplayElement.textContent = '矩阵渲染失败';
-    }
-    
-    // 显示显示区域，隐藏空状态
-    displayArea.classList.remove('hidden');
-    emptyState.classList.add('hidden');
+    fetch(`http://127.0.0.1:11459/api/matrix/get/${matrixId}`)
+    .then(response => response.json())
+    .then(data => {
+        clearTimeout(timeoutId);
+        if (data.success && data.matrix) {
+            const matrixData = data.matrix;
+            
+            // 更新矩阵信息
+            matrixNameElement.textContent = matrixData.name;
+            matrixDimensionElement.textContent = `${matrixData.rows} × ${matrixData.cols}`;
+            
+            // 生成 LaTeX 并渲染
+            const latex = matrixToLatex(matrixData.data);
+            
+            try {
+                katex.render(latex, matrixDisplayElement, {
+                    displayMode: true,
+                    throwOnError: false
+                });
+            } catch (error) {
+                console.error('KaTeX 渲染错误:', error);
+                matrixDisplayElement.textContent = '矩阵渲染失败';
+            }
+            
+            // 显示显示区域，隐藏空状态
+            displayArea.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+        } else {
+            // 如果后端没有数据，尝试使用本地占位符数据
+            const matrixData = placeholderMatrices[matrixId];
+            if (matrixData) {
+                matrixNameElement.textContent = matrixData.name;
+                matrixDimensionElement.textContent = `${matrixData.rows} × ${matrixData.cols}`;
+                const latex = matrixToLatex(matrixData.data);
+                try {
+                    katex.render(latex, matrixDisplayElement, {
+                        displayMode: true,
+                        throwOnError: false
+                    });
+                } catch (error) {
+                    console.error('KaTeX 渲染错误:', error);
+                    matrixDisplayElement.textContent = '矩阵渲染失败';
+                }
+                displayArea.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+            } else {
+                showEmptyState();
+            }
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        console.error('获取矩阵数据失败:', error);
+        // 出错时尝试使用本地占位符数据
+        const matrixData = placeholderMatrices[matrixId];
+        if (matrixData) {
+            matrixNameElement.textContent = matrixData.name + ' (本地)';
+            matrixDimensionElement.textContent = `${matrixData.rows} × ${matrixData.cols}`;
+            const latex = matrixToLatex(matrixData.data);
+            try {
+                katex.render(latex, matrixDisplayElement, {
+                    displayMode: true,
+                    throwOnError: false
+                });
+            } catch (error) {
+                console.error('KaTeX 渲染错误:', error);
+                matrixDisplayElement.textContent = '矩阵渲染失败';
+            }
+            displayArea.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+        } else {
+            alert('网络错误: ' + error.message);
+            showEmptyState();
+        }
+    });
 }
 
 /**

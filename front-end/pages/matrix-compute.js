@@ -275,6 +275,42 @@ function displayConvResult() {
 }
 
 /**
+ * 发送运算请求到后端
+ */
+function sendComputeRequest(payload) {
+    const timeoutId = setTimeout(() => {
+        alert('后端响应超时（2秒无响应）');
+    }, 2000);
+    
+    fetch('http://127.0.0.1:11459/api/matrix/compute', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearTimeout(timeoutId);
+        if (data.success) {
+            // 显示结果
+            if (currentOperation === 'conv') {
+                displayConvResult();
+            } else {
+                const result = generatePlaceholderMatrix(3, 3);
+                displayMatrixResult(result);
+            }
+        } else {
+            alert('运算失败: ' + (data.error || '未知错误'));
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        alert('网络错误: ' + error.message);
+    });
+}
+
+/**
  * 处理提交
  */
 function handleSubmit() {
@@ -282,6 +318,8 @@ function handleSubmit() {
         alert('请先选择运算类型');
         return;
     }
+    
+    let payload = { operation: currentOperation };
     
     // 根据不同运算类型进行处理
     switch (currentOperation) {
@@ -291,9 +329,7 @@ function handleSubmit() {
                 alert('请选择要转置的矩阵');
                 return;
             }
-            // 生成占位符结果（假设是3×4矩阵转置后变成4×3）
-            const transposeResult = generatePlaceholderMatrix(4, 3);
-            displayMatrixResult(transposeResult);
+            payload.matrix_id = transposeMatrix;
             break;
             
         case 'add':
@@ -303,9 +339,8 @@ function handleSubmit() {
                 alert('请选择两个矩阵进行加法运算');
                 return;
             }
-            // 生成占位符结果
-            const addResult = generatePlaceholderMatrix(3, 3);
-            displayMatrixResult(addResult);
+            payload.matrix_a = addMatrixA;
+            payload.matrix_b = addMatrixB;
             break;
             
         case 'scalar':
@@ -316,9 +351,8 @@ function handleSubmit() {
                 alert('请选择要进行标量乘法的矩阵');
                 return;
             }
-            // 生成占位符结果
-            const scalarResult = generatePlaceholderMatrix(3, 3);
-            displayMatrixResult(scalarResult);
+            payload.scalar = parseInt(scalarValue);
+            payload.matrix_id = scalarMatrix;
             break;
             
         case 'multiply':
@@ -328,21 +362,21 @@ function handleSubmit() {
                 alert('请选择两个矩阵进行乘法运算');
                 return;
             }
-            // 生成占位符结果
-            const multiplyResult = generatePlaceholderMatrix(3, 4);
-            displayMatrixResult(multiplyResult);
+            payload.matrix_a = multiplyMatrixA;
+            payload.matrix_b = multiplyMatrixB;
             break;
             
         case 'conv':
             const kernelData = collectKernelData();
-            console.log('卷积核数据:', kernelData);
-            // 显示卷积结果（8×10网格）
-            displayConvResult();
+            payload.kernel = kernelData;
             break;
             
         default:
             alert('未知的运算类型');
+            return;
     }
+    
+    sendComputeRequest(payload);
 }
 
 /**

@@ -203,14 +203,35 @@ function handleSubmit() {
     
     console.log('提交矩阵数据:', payload);
     
-    // TODO: 这里可以添加实际的数据发送逻辑
-    // 例如通过 IPC 发送到主进程，然后发送到后端服务器
+    // 发送数据到后端
+    const timeoutId = setTimeout(() => {
+        alert('后端响应超时（2秒无响应）');
+    }, 2000);
     
-    // 提交成功，返回主页面
-    document.body.style.opacity = '0';
-    setTimeout(() => {
-        window.location.href = '../index.html';
-    }, 300);
+    fetch('http://127.0.0.1:11459/api/matrix/input', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearTimeout(timeoutId);
+        if (data.success) {
+            alert('矩阵数据提交成功！');
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 300);
+        } else {
+            alert('提交失败: ' + (data.error || '未知错误'));
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        alert('网络错误: ' + error.message);
+    });
 }
 
 // 事件监听器
