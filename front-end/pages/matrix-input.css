@@ -1,0 +1,94 @@
+/* 矩阵输入页面样式 */
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-input {
+    padding: 12px;
+    border: 2px solid #c8e6c9;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.form-select {
+    padding: 12px;
+    border: 2px solid #c8e6c9;
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: white;
+    cursor: pointer;
+}
+
+.auto-name-btn {
+    background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: transform 0.2s;
+}
+
+.auto-name-btn:hover {
+    transform: translateY(-2px);
+}
+
+.matrix-grid {
+    display: grid;
+    gap: 5px;
+    margin: 20px 0;
+    justify-content: start;
+    overflow: auto;
+    max-width: 100%;
+}
+
+.matrix-cell {
+    width: 60px;
+    height: 40px;
+    border: 2px solid #c8e6c9;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+.matrix-cell:focus {
+    outline: none;
+    border-color: #66bb6a;
+    box-shadow: 0 0 0 3px rgba(102, 187, 106, 0.2);
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: transform 0.2s;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+}
+
+.dimension-input {
+    width: 100px;
+}
