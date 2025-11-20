@@ -1,3 +1,6 @@
+# VSCode
+.VSCodeCounter/
+
 # Vivado generated files
 vivado_proj/
 logs/
