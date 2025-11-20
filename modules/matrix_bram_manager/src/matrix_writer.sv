@@ -107,27 +107,29 @@ module matrix_writer #(
             write_addr <= '0;
             data_count <= '0;
             write_done <= 1'b0;
-            writer_ready <= 1'b1;
+            bram_wr_en <= 1'b0;
+            bram_addr <= '0;
+            bram_din  <= '0;
         end else begin
+            bram_wr_en <= 1'b0;
+            bram_addr <= write_addr;
+            bram_din  <= '0;
+            write_done <= 1'b0;
+
             case (current_state)
                 IDLE: begin
                     write_addr <= base_addr;
                     data_count <= '0;
-                    write_done <= 1'b0;
-                    writer_ready <= 1'b1;
                 end
 
                 WRITE_META_ROWS_COLS: begin
-                    // Write rows and cols
                     bram_wr_en <= 1'b1;
                     bram_addr <= write_addr;
                     bram_din <= {actual_rows, actual_cols, 16'd0}; // upper 16 bits zeroed
                     write_addr <= write_addr + 1;
-                    writer_ready <= 1'b0;
                 end
 
                 WRITE_META_NAME_HIGH32: begin
-                    // Write high 32 bits of name
                     bram_wr_en <= 1'b1;
                     bram_addr <= write_addr;
                     bram_din <= {matrix_name[0], matrix_name[1], matrix_name[2], matrix_name[3]};
@@ -135,7 +137,6 @@ module matrix_writer #(
                 end
 
                 WRITE_META_NAME_LOW32: begin
-                    // Write low 32 bits of name
                     bram_wr_en <= 1'b1;
                     bram_addr <= write_addr;
                     bram_din <= {matrix_name[4], matrix_name[5], matrix_name[6], matrix_name[7]};
@@ -143,27 +144,27 @@ module matrix_writer #(
                 end
 
                 WRITE_DATA: begin
-                    if (data_valid) begin
+                    if (data_valid && (data_count < total_elements)) begin
                         bram_wr_en <= 1'b1;
                         bram_addr <= write_addr;
                         bram_din <= data_in;
                         write_addr <= write_addr + 1;
                         data_count <= data_count + 1;
-                    end else begin
-                        bram_wr_en <= 1'b0;
                     end
                 end
 
                 DONE: begin
                     write_done <= 1'b1;
-                    writer_ready <= 1'b1;
                 end
 
                 default: begin
-                    bram_wr_en <= 1'b0;
                 end
             endcase
         end
     end
+
+    assign write_ready  = (current_state == IDLE) || (current_state == DONE);
+    assign writer_ready = (current_state == IDLE) ||
+                          (current_state == WRITE_DATA && (data_count < total_elements));
 
 endmodule
