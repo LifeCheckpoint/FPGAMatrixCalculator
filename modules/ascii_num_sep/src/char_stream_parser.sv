@@ -73,7 +73,7 @@ module char_stream_parser #(
             SKIP_SPACE: begin
                 if (read_ptr >= total_length) begin
                     state_next = DONE;
-                end else if (!is_space(current_char)) begin
+                end else if (!is_space(char_buffer[read_ptr])) begin
                     state_next = PARSE_NUMBER;
                 end
             end
@@ -82,7 +82,7 @@ module char_stream_parser #(
                 if (read_ptr >= total_length) begin
                     // End of stream, finish current number
                     state_next = END_NUMBER;
-                end else if (is_space(current_char)) begin
+                end else if (is_space(char_buffer[read_ptr])) begin
                     // Space encountered, end current number
                     state_next = END_NUMBER;
                 end
