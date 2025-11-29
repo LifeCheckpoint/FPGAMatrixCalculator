@@ -100,17 +100,29 @@ all_done = parse_done AND (write_count == total_count)
 -----------------------------------------------------------------------------
  1       0          -         0          0            -            0
  2       1         123        0          0            -            0
- 3       0          -         1          0           123           1
- 4       0          -         0          1           123           1
+ 3       0          -         1          0           123           0  ← write_count还未更新
+ 4       0          -         0          1           123           1  ← write_count才更新
  5       1         456        0          1           123           1
- 6       0          -         1          1           456           2
- 7       0          -         0          2           456           2
+ 6       0          -         1          1           456           1  ← write_count还未更新
+ 7       0          -         0          2           456           2  ← write_count才更新
 ```
 
-注意：
-- ram_wr_en 延迟1周期
-- ram_wr_data 延迟1周期
-- write_count 在写使能有效时更新
+**关键时序特性：**
+- `ram_wr_en` 相对于 `data_valid` 延迟1周期
+- `ram_wr_data` 相对于 `data_in` 延迟1周期
+- `write_count` 相对于 `ram_wr_en` **再延迟1周期**才能读到新值
+  - 原因：使用非阻塞赋值（`<=`），寄存器更新在下一周期生效
+  - 在周期3，`ram_wr_en=1` 时开始更新，但 `write_count` 仍为旧值0
+  - 在周期4，`write_count` 才显示为新值1
+
+**测试时注意：**
+检查 `write_count` 时，需要在最后一次写入后等待**2个时钟周期**：
+```systemverilog
+send_data(32'd123);      // 周期N: data_valid=1
+@(posedge clk);           // 周期N+1: ram_wr_en=1, write_count=旧值
+@(posedge clk);           // 周期N+2: write_count=新值 ← 在这里检查
+verify_write_count(1);    // 现在write_count才是正确的
+```
 
 ### 完成时序
 
@@ -226,6 +238,10 @@ write_count到达total_count → 等待parse_done → all_done置位
 3. **同步要求**：parse_done应在所有数据写入完成前置位
 4. **复位行为**：all_done置位后需要复位才能处理下一批数据
 5. **无溢出保护**：如果write_count超过2047，地址会回绕
+6. **⚠️ 时序延迟**：`write_count`的更新相对于`ram_wr_en`有1周期延迟
+   - 读取`write_count`值时，需要在最后一次写入后等待2个时钟周期
+   - 这是由于寄存器的非阻塞赋值特性导致的正常现象
+   - 测试代码必须考虑这个延迟，否则会读到过时的计数值
 
 ## 与其他模块的接口
 
@@ -254,6 +270,7 @@ write_count到达total_count → 等待parse_done → all_done置位
 **问题1**：all_done不置位
 - 检查：write_count是否等于total_count
 - 检查：parse_done是否已置位
+- ⚠️ 检查：是否在write_count更新完成后才检查（需等待2个周期）
 
 **问题2**：地址跳跃
 - 检查：data_valid脉冲是否正确
@@ -262,6 +279,24 @@ write_count到达total_count → 等待parse_done → all_done置位
 **问题3**：数据错位
 - 检查：写使能时序
 - 检查：数据寄存器延迟
+
+**问题4**：write_count读取值不正确（常见问题）
+- **根因**：在ram_wr_en有效的同一周期读取write_count
+- **现象**：读到的值总是比预期少1
+- **解决**：在最后一次写入后等待2个时钟周期再读取
+- **示例**：
+  ```systemverilog
+  // 错误做法 ❌
+  send_data(123);
+  @(posedge clk);
+  $display("count=%d", write_count);  // 会少1！
+  
+  // 正确做法 ✓
+  send_data(123);
+  @(posedge clk);
+  @(posedge clk);  // 多等1个周期
+  $display("count=%d", write_count);  // 正确
+  ```
 
 ## 测试验证
 
