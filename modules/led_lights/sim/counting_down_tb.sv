@@ -37,8 +37,8 @@ module counting_down_tb;
         rst_n = 1;
         #50;
         
-        $display("[%0t] Start countdown from 5 seconds", $time);
-        time_in = 16'd5;
+        $display("[%0t] Start countdown from 1 seconds", $time);
+        time_in = 16'd1;
         start = 1;
         #20;
         start = 0;
@@ -47,7 +47,7 @@ module counting_down_tb;
         $display("[%0t] Countdown complete! Stop signal received", $time);
         #100;
         
-        $display("[%0t] Start countdown from 3 seconds", $time);
+        $display("[%0t] Start countdown from 1 seconds", $time);
         time_in = 16'd3;
         start = 1;
         #20;
