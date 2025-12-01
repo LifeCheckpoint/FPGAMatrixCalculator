@@ -12,6 +12,9 @@ module num_storage_ram_tb;
     logic                    clk;
     logic                    rst_n;
     
+    // Clear signal
+    logic                    clear;
+    
     // Write port
     logic                    wr_en;
     logic [ADDR_WIDTH-1:0]   wr_addr;
@@ -33,6 +36,7 @@ module num_storage_ram_tb;
     ) dut (
         .clk        (clk),
         .rst_n      (rst_n),
+        .clear      (clear),
         .wr_en      (wr_en),
         .wr_addr    (wr_addr),
         .wr_data    (wr_data),
@@ -87,6 +91,7 @@ module num_storage_ram_tb;
         
         // Initialize signals
         rst_n = 0;
+        clear = 0;
         wr_en = 0;
         wr_addr = 0;
         wr_data = 0;
@@ -160,6 +165,48 @@ module num_storage_ram_tb;
         @(posedge clk);
         $display("[%t] Concurrent read result: addr=100, data=%0d", $time, $signed(rd_data));
         read_verify(11'd201, 32'd888);
+        $display("");
+        
+        // Test 8: Clear RAM functionality (NEW)
+        $display("[%t] Test 8: RAM Clear functionality", $time);
+        
+        // First write some data to multiple addresses
+        $display("  Writing test data to addresses 500-504...");
+        write_ram(11'd500, 32'd111);
+        write_ram(11'd501, 32'd222);
+        write_ram(11'd502, 32'd333);
+        write_ram(11'd503, 32'd444);
+        write_ram(11'd504, 32'd555);
+        
+        // Verify data was written
+        read_verify(11'd500, 32'd111);
+        read_verify(11'd502, 32'd333);
+        
+        // Trigger clear
+        $display("  Triggering RAM clear...");
+        @(posedge clk);
+        clear <= 1'b1;
+        @(posedge clk);
+        clear <= 1'b0;
+        
+        // Wait for clear to complete (2048 cycles)
+        $display("  Waiting for clear to complete (2048 cycles)...");
+        repeat(2048) @(posedge clk);
+        
+        // Verify all previously written locations are now zero
+        $display("  Verifying cleared data...");
+        read_verify(11'd0, 32'd0);
+        read_verify(11'd500, 32'd0);
+        read_verify(11'd501, 32'd0);
+        read_verify(11'd502, 32'd0);
+        read_verify(11'd503, 32'd0);
+        read_verify(11'd504, 32'd0);
+        read_verify(11'd2047, 32'd0);
+        
+        // Write new data after clear
+        $display("  Writing new data after clear...");
+        write_ram(11'd600, 32'd999);
+        read_verify(11'd600, 32'd999);
         $display("");
         
         // Print summary

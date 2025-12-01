@@ -54,6 +54,7 @@ uart_packet_handler
 |--------|------|------|
 | clk | 1 | 时钟信号 |
 | rst_n | 1 | 异步低电平复位 |
+| buf_clear | 1 | 缓冲区清空信号（单周期脉冲）|
 | pkt_payload_data | 8 | UART包payload数据 |
 | pkt_payload_valid | 1 | payload有效信号 |
 | pkt_payload_last | 1 | payload最后字节标志 |
@@ -144,6 +145,15 @@ uart_packet_handler
 ### 完整使用流程
 
 ```systemverilog
+// 0. 清空缓冲区（新增 - 推荐在每次输入前执行）
+@(posedge clk);
+buf_clear <= 1'b1;
+@(posedge clk);
+buf_clear <= 1'b0;
+
+// 等待清空完成（2048周期）
+repeat(2048) @(posedge clk);
+
 // 1. 发送payload数据
 string test_str = "123 -456 789";
 for (int i = 0; i < test_str.len(); i++) begin
@@ -195,6 +205,7 @@ uart_packet_handler u_uart_pkt (
 ascii_num_sep_top u_ascii_sep (
     .clk                (clk),
     .rst_n              (rst_n),
+    .buf_clear          (buf_clear_btn),  // 连接到清空按钮
     .pkt_payload_data   (pkt_payload_data),
     .pkt_payload_valid  (pkt_payload_valid),
     .pkt_payload_last   (pkt_payload_last),
@@ -380,10 +391,14 @@ end
 ## 注意事项
 
 1. **复位要求**：每处理完一个包必须复位才能处理下一个
-2. **payload格式**：必须是空格分隔的整数，不支持其他格式
-3. **容量限制**：最多2048个整数
-4. **时序约束**：确保100MHz时钟稳定
-5. **读延迟**：RAM读操作有1周期延迟
+2. **缓冲区清空**：**强烈建议**在每次输入新数据前使用 `buf_clear` 清空缓冲区
+   - 清空需要2048个时钟周期
+   - 确保数据不足时剩余位置为0
+   - 可连接到FPGA按钮实现手动清空
+3. **payload格式**：必须是空格分隔的整数，不支持其他格式
+4. **容量限制**：最多2048个整数
+5. **时序约束**：确保100MHz时钟稳定
+6. **读延迟**：RAM读操作有1周期延迟
 
 ## 测试验证
 

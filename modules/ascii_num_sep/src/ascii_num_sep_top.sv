@@ -10,6 +10,9 @@ module ascii_num_sep_top #(
     input  logic                    clk,
     input  logic                    rst_n,
     
+    // Buffer RAM clear signal
+    input  logic                    buf_clear,
+    
     // UART packet payload interface
     input  logic [7:0]              pkt_payload_data,
     input  logic                    pkt_payload_valid,
@@ -135,6 +138,7 @@ module ascii_num_sep_top #(
     ) u_ram (
         .clk        (clk),
         .rst_n      (rst_n),
+        .clear      (buf_clear),
         .wr_en      (ram_wr_en),
         .wr_addr    (ram_wr_addr),
         .wr_data    (ram_wr_data),

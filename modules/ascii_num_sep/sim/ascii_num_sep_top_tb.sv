@@ -7,6 +7,9 @@ module ascii_num_sep_top_tb;
     logic        clk;
     logic        rst_n;
     
+    // Buffer clear signal
+    logic        buf_clear;
+    
     // UART packet payload interface
     logic [7:0]  pkt_payload_data;
     logic        pkt_payload_valid;
@@ -32,6 +35,7 @@ module ascii_num_sep_top_tb;
     ) dut (
         .clk                (clk),
         .rst_n              (rst_n),
+        .buf_clear          (buf_clear),
         .pkt_payload_data   (pkt_payload_data),
         .pkt_payload_valid  (pkt_payload_valid),
         .pkt_payload_last   (pkt_payload_last),
@@ -108,6 +112,7 @@ module ascii_num_sep_top_tb;
         
         // Initialize signals
         rst_n = 0;
+        buf_clear = 0;
         pkt_payload_data = 8'd0;
         pkt_payload_valid = 1'b0;
         pkt_payload_last = 1'b0;
@@ -117,6 +122,16 @@ module ascii_num_sep_top_tb;
         repeat(10) @(posedge clk);
         rst_n = 1;
         repeat(5) @(posedge clk);
+        
+        // Test 0: Clear buffer before use (NEW - recommended practice)
+        $display("\n[%t] Test 0: Clear buffer RAM", $time);
+        @(posedge clk);
+        buf_clear <= 1'b1;
+        @(posedge clk);
+        buf_clear <= 1'b0;
+        $display("  Waiting for buffer clear (2048 cycles)...");
+        repeat(2048) @(posedge clk);
+        $display("  Buffer cleared");
         
         // Test 1: Simple positive numbers
         $display("\n[%t] Test 1: Positive numbers '123 456 789'", $time);
