@@ -141,8 +141,9 @@ module matrix_input_handler (
             READ_COLS:      next_state = WAIT_COLS;
             WAIT_COLS: begin
                 // Check dimension validity
+                // Use buf_rd_data[7:0] for cols because cols_reg is being updated in this cycle
                 if (rows_reg > settings_max_row[7:0] || rows_reg == 8'd0 ||
-                    cols_reg > settings_max_col[7:0] || cols_reg == 8'd0) begin
+                    buf_rd_data[7:0] > settings_max_col[7:0] || buf_rd_data[7:0] == 8'd0) begin
                     // Dimension exceeds settings, go to clear if named matrix started writing
                     if (is_named_matrix) begin
                         next_state = INITIATE_CLEAR;
