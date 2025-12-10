@@ -141,6 +141,25 @@ module matrix_op_selector_tb;
         end
     endtask
 
+    task check_led_error(input logic expect_error);
+        if (expect_error) begin
+            if (led_error === 1'b1)
+                $display("  [PASS] LED Error is HIGH as expected.");
+            else
+                $display("  [FAIL] LED Error is LOW, expected HIGH.");
+                
+            if (an !== 4'b1111)
+                $display("  [PASS] 7-Seg AN is active (%b) as expected.", an);
+            else
+                $display("  [FAIL] 7-Seg AN is inactive (1111), expected active.");
+        end else begin
+            if (led_error === 1'b0)
+                $display("  [PASS] LED Error is LOW as expected.");
+            else
+                $display("  [FAIL] LED Error is HIGH, expected LOW.");
+        end
+    endtask
+
     // Debug Monitor
     always @(dut.state) begin
         $display("[%0t] DUT State changed to: %0d", $time, dut.state);
@@ -220,6 +239,8 @@ module matrix_op_selector_tb;
         wait(result_valid);
         $display("[%0t] Result Valid! Op: %0d, A: %0d, B: %0d", $time, result_op, result_matrix_a, result_matrix_b);
         
+        check_led_error(0); // Expect no error
+
         if (result_op == CALC_ADD && result_matrix_a == 0 && result_matrix_b == 1)
             $display("TEST 1 PASSED");
         else
@@ -333,6 +354,8 @@ module matrix_op_selector_tb;
         
         // Should go to ERROR_WAIT because no matrices found
         wait(dut.state == ERROR_WAIT);
+        #100;
+        check_led_error(1); // Expect error
         $display("TEST 4 PASSED (Entered ERROR_WAIT)");
         
         // Confirm to retry
@@ -377,6 +400,8 @@ module matrix_op_selector_tb;
         press_confirm();
         
         wait(dut.state == ERROR_WAIT);
+        #100;
+        check_led_error(1); // Expect error
         $display("TEST 5 PASSED (Entered ERROR_WAIT for invalid ID)");
         
         #1000;
@@ -421,6 +446,8 @@ module matrix_op_selector_tb;
         
         // Should fail validation because 3x4 * 3x4 requires 4==3 (False)
         wait(dut.state == ERROR_WAIT);
+        #100;
+        check_led_error(1); // Expect error
         $display("TEST 6 PASSED (Entered ERROR_WAIT for illegal multiplication)");
 
         #1000;
