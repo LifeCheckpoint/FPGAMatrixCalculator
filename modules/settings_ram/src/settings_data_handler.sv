@@ -4,12 +4,13 @@
  * settings_data_handler - Settings Data Handler
  * 
  * Reads 5-byte setting data from buffer RAM and validates:
- * - Byte 0: Command (1=max_row, 2=max_col, 3=data_min, 4=data_max)
+ * - Byte 0: Command (1=max_row, 2=max_col, 3=data_min, 4=data_max, 5=countdown_time)
  * - Byte 1-4: int32 data (little-endian)
- * 
+ *
  * Validation rules:
  * - Row/Column count cannot exceed 32
  * - Data max value cannot exceed 65535
+ * - Countdown time must be between 5 and 15
  */
 module settings_data_handler (
     input  logic        clk,
