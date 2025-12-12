@@ -142,7 +142,10 @@ module compute_subsystem_tb;
             @(posedge clk);
             if (write_request && write_ready) begin
                 write_ready <= 0;
-                repeat(50) @(posedge clk); // Simulate write delay
+                // Simulate write delay
+                // Must be longer than the time it takes to write the data
+                // Convolution writes 80 words (8x10), so we need > 80 cycles.
+                repeat(200) @(posedge clk);
                 write_done <= 1;
                 @(posedge clk);
                 write_done <= 0;
