@@ -38,6 +38,7 @@ module matrix_reader #(
     logic [7:0]  current_row;
     logic [7:0]  current_col;
     logic [31:0] current_val;
+    logic [ADDR_WIDTH-1:0] current_addr;
     
     // State Machine
     typedef enum logic [4:0] {
@@ -152,6 +153,7 @@ module matrix_reader #(
                     if (pack_ready) begin
                         current_row <= 8'd0;
                         current_col <= 8'd0;
+                        current_addr <= base_addr + 3;
                         if (rows == 0 || cols == 0) begin
                             state <= DONE_STATE; // Empty matrix
                         end else begin
@@ -177,6 +179,7 @@ module matrix_reader #(
                 
                 CHECK_LOOP: begin
                     // Increment logic
+                    current_addr <= current_addr + 1;
                     if (current_col == cols - 1) begin
                         current_col <= 8'd0;
                         if (current_row == rows - 1) begin
@@ -213,7 +216,7 @@ module matrix_reader #(
             READ_META_0: bram_addr = base_addr + 0;
             READ_META_1: bram_addr = base_addr + 1;
             READ_META_2: bram_addr = base_addr + 2;
-            READ_DATA:   bram_addr = base_addr + 3 + (current_row * cols) + current_col;
+            READ_DATA:   bram_addr = current_addr;
             
             SEND_ID: begin
                 pack_valid = 1'b1;

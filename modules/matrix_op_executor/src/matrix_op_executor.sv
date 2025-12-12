@@ -57,6 +57,7 @@ module matrix_op_executor #(
 
     // Latched Inputs
     calc_type_t latched_op;
+    calc_type_t latched_op_mux; // Duplicate for MUX control to reduce fanout
     logic [2:0] latched_matrix_a;
     logic [2:0] latched_matrix_b;
     logic [31:0] latched_scalar;
@@ -253,6 +254,7 @@ module matrix_op_executor #(
                 STATE_IDLE: begin
                     if (start) begin
                         latched_op <= op_type;
+                        latched_op_mux <= op_type;
                         latched_matrix_a <= matrix_a;
                         latched_matrix_b <= matrix_b;
                         latched_scalar <= scalar_in;
@@ -334,7 +336,7 @@ module matrix_op_executor #(
     // Status Multiplexing
     //-------------------------------------------------------------------------
     always_comb begin
-        case (latched_op)
+        case (latched_op_mux)
             CALC_ADD: begin
                 current_busy = op_add_busy;
                 current_status = op_add_status;
@@ -366,7 +368,7 @@ module matrix_op_executor #(
     // Output Multiplexing
     //-------------------------------------------------------------------------
 
-    assign cycle_count = (latched_op == CALC_CONV) ? op_conv_cycle_count : 32'd0;
+    assign cycle_count = (latched_op_mux == CALC_CONV) ? op_conv_cycle_count : 32'd0;
 
     always_comb begin
         // Default assignments
@@ -380,9 +382,9 @@ module matrix_op_executor #(
         
         // Name muxing is tricky with arrays, handle separately
         
-        if (state == STATE_PREPARE_SCALAR_REQ || 
-            state == STATE_PREPARE_SCALAR_WAIT_ENABLE || 
-            state == STATE_PREPARE_SCALAR_WRITE || 
+        if (state == STATE_PREPARE_SCALAR_REQ ||
+            state == STATE_PREPARE_SCALAR_WAIT_ENABLE ||
+            state == STATE_PREPARE_SCALAR_WRITE ||
             state == STATE_PREPARE_SCALAR_WAIT_DONE) begin
             
             // Scalar Writer Control
@@ -395,7 +397,7 @@ module matrix_op_executor #(
             
         end else begin
             // Op Module Control
-            case (latched_op)
+            case (latched_op_mux)
                 CALC_ADD: begin
                     bram_read_addr = op_add_addr;
                     write_request = op_add_req;
@@ -450,13 +452,13 @@ module matrix_op_executor #(
     generate
         for (i = 0; i < 8; i++) begin : gen_name_mux
             always_comb begin
-                if (state == STATE_PREPARE_SCALAR_REQ || 
-                    state == STATE_PREPARE_SCALAR_WAIT_ENABLE || 
-                    state == STATE_PREPARE_SCALAR_WRITE || 
+                if (state == STATE_PREPARE_SCALAR_REQ ||
+                    state == STATE_PREPARE_SCALAR_WAIT_ENABLE ||
+                    state == STATE_PREPARE_SCALAR_WRITE ||
                     state == STATE_PREPARE_SCALAR_WAIT_DONE) begin
                     write_name[i] = scalar_name[i];
                 end else begin
-                    case (latched_op)
+                    case (latched_op_mux)
                         CALC_ADD:        write_name[i] = op_add_name[i];
                         CALC_MUL:        write_name[i] = op_mul_name[i];
                         CALC_SCALAR_MUL: write_name[i] = op_scalar_name[i];
