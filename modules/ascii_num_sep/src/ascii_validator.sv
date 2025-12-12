@@ -2,7 +2,7 @@
 
 // ASCII Validator - Validates and buffers payload characters
 module ascii_validator #(
-    parameter MAX_PAYLOAD = 2048
+    parameter MAX_PAYLOAD = 1200
 ) (
     input  logic        clk,
     input  logic        rst_n,

@@ -2,7 +2,7 @@
 
 // ASCII Number Separator Top Module - Integrates all sub-modules
 module ascii_num_sep_top #(
-    parameter MAX_PAYLOAD = 2048,
+    parameter MAX_PAYLOAD = 1200,
     parameter DATA_WIDTH = 32,
     parameter DEPTH = 2048,
     parameter ADDR_WIDTH = 11

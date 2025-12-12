@@ -2,7 +2,7 @@
 
 // Character Stream Parser - Parses character stream and identifies number boundaries
 module char_stream_parser #(
-    parameter MAX_PAYLOAD = 2048
+    parameter MAX_PAYLOAD = 1200
 ) (
     input  logic        clk,
     input  logic        rst_n,

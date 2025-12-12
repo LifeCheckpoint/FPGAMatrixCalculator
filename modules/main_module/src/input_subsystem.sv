@@ -114,7 +114,7 @@ module input_subsystem #(
     end
 
     ascii_num_sep_top #(
-        .MAX_PAYLOAD(2048),
+        .MAX_PAYLOAD(1200),
         .DATA_WIDTH(32),
         .DEPTH(2048),
         .ADDR_WIDTH(11)
