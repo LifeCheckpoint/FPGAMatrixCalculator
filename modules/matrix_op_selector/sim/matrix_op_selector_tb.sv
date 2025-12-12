@@ -23,6 +23,16 @@ module matrix_op_selector_tb;
     logic [7:0] uart_tx_data;
     logic uart_tx_valid;
     logic uart_tx_ready;
+    
+    // Buffer Signals
+    logic [3:0] buf_rd_addr;
+    logic [31:0] buf_rd_data;
+    logic [10:0] num_count;
+    logic buf_clear_req;
+    logic buf_clear;
+    
+    assign buf_clear = start || buf_clear_req;
+
     logic [ADDR_WIDTH-1:0] bram_addr;
     logic [31:0] bram_data;
     logic led_error;
@@ -40,10 +50,32 @@ module matrix_op_selector_tb;
     logic [31:0] bram_wr_data;
     logic [31:0] bram_dout; // Output from BRAM to DUT
 
+    // Buffer Instance
+    ascii_num_sep_top #(
+        .MAX_PAYLOAD(64),
+        .DEPTH(16),
+        .ADDR_WIDTH(4)
+    ) u_buffer (
+        .clk(clk),
+        .rst_n(rst_n),
+        .buf_clear(buf_clear),
+        .pkt_payload_data(uart_rx_data),
+        .pkt_payload_valid(uart_rx_valid),
+        .pkt_payload_last(uart_rx_valid && (uart_rx_data == 8'h0A || uart_rx_data == 8'h0D)),
+        .pkt_payload_ready(),
+        .rd_addr(buf_rd_addr),
+        .rd_data(buf_rd_data),
+        .processing(),
+        .done(),
+        .invalid(),
+        .num_count(num_count)
+    );
+
     // DUT
     matrix_op_selector #(
         .BLOCK_SIZE(BLOCK_SIZE),
-        .ADDR_WIDTH(ADDR_WIDTH)
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .BUF_ADDR_WIDTH(4)
     ) dut (
         .clk(clk),
         .rst_n(rst_n),
@@ -54,11 +86,13 @@ module matrix_op_selector_tb;
         .op_mode_in(op_mode_in),
         .calc_type_in(calc_type_in),
         .countdown_time_in(countdown_time_in),
-        .uart_rx_data(uart_rx_data),
-        .uart_rx_valid(uart_rx_valid),
         .uart_tx_data(uart_tx_data),
         .uart_tx_valid(uart_tx_valid),
         .uart_tx_ready(uart_tx_ready),
+        .buf_rd_addr(buf_rd_addr),
+        .buf_rd_data(buf_rd_data),
+        .num_count(num_count),
+        .buf_clear_req(buf_clear_req),
         .bram_addr(bram_addr),
         .bram_data(bram_dout), // Connect BRAM output to DUT input
         .led_error(led_error),

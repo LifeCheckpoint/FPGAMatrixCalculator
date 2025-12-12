@@ -79,12 +79,46 @@ module compute_subsystem #(
     state_t state;
     
     //-------------------------------------------------------------------------
+    // Input Buffer (ascii_num_sep_top)
+    //-------------------------------------------------------------------------
+    
+    logic buf_clear;
+    logic [3:0] buf_rd_addr;
+    logic [31:0] buf_rd_data;
+    logic [10:0] num_count;
+    logic selector_clear_req;
+    
+    // Clear buffer on start (entry) or when selector requests it
+    assign buf_clear = start || selector_clear_req;
+    
+    ascii_num_sep_top #(
+        .MAX_PAYLOAD(64),
+        .DEPTH(16),
+        .ADDR_WIDTH(4)
+    ) u_input_buffer (
+        .clk(clk),
+        .rst_n(rst_n),
+        .buf_clear(buf_clear),
+        .pkt_payload_data(uart_rx_data),
+        .pkt_payload_valid(uart_rx_valid),
+        .pkt_payload_last(uart_rx_valid && (uart_rx_data == 8'h0A || uart_rx_data == 8'h0D)),
+        .pkt_payload_ready(),
+        .rd_addr(buf_rd_addr),
+        .rd_data(buf_rd_data),
+        .processing(),
+        .done(),
+        .invalid(),
+        .num_count(num_count)
+    );
+
+    //-------------------------------------------------------------------------
     // Matrix Operation Selector
     //-------------------------------------------------------------------------
     
     matrix_op_selector #(
         .BLOCK_SIZE(BLOCK_SIZE),
-        .ADDR_WIDTH(ADDR_WIDTH)
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .BUF_ADDR_WIDTH(4)
     ) u_selector (
         .clk(clk),
         .rst_n(rst_n),
@@ -95,11 +129,13 @@ module compute_subsystem #(
         .op_mode_in(op_mode_in),
         .calc_type_in(calc_type_in),
         .countdown_time_in(settings_countdown),
-        .uart_rx_data(uart_rx_data),
-        .uart_rx_valid(uart_rx_valid),
         .uart_tx_data(uart_tx_data),
         .uart_tx_valid(uart_tx_valid),
         .uart_tx_ready(uart_tx_ready),
+        .buf_rd_addr(buf_rd_addr),
+        .buf_rd_data(buf_rd_data),
+        .num_count(num_count),
+        .buf_clear_req(selector_clear_req),
         .bram_addr(selector_bram_addr),
         .bram_data(bram_rd_data),
         .led_error(selector_led_error),

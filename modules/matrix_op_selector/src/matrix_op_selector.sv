@@ -19,12 +19,16 @@ module matrix_op_selector #(
     input  logic [31:0]           countdown_time_in, // From settings
     
     // UART Interface
-    input  logic [7:0]            uart_rx_data,
-    input  logic                  uart_rx_valid,
     output logic [7:0]            uart_tx_data,
     output logic                  uart_tx_valid,
     input  logic                  uart_tx_ready,
     
+    // Buffer Interface
+    output logic [3:0]            buf_rd_addr, // Fixed width 4 to match previous internal logic
+    input  logic [31:0]           buf_rd_data,
+    input  logic [10:0]           num_count,
+    output logic                  buf_clear_req,
+
     // BRAM Interface
     output logic [ADDR_WIDTH-1:0] bram_addr,
     input  logic [31:0]           bram_data,
@@ -69,30 +73,12 @@ module matrix_op_selector #(
     logic input_clear;
     logic [31:0] input_data;
     logic [10:0] input_count;
-    logic input_done; // Not used directly, we poll count
-    logic [ADDR_WIDTH-1:0] input_rd_addr;
+    logic [3:0] input_rd_addr;
     
-    // Input Parser Instance
-    // We use a small buffer for input parsing
-    ascii_num_sep_top #(
-        .MAX_PAYLOAD(64),
-        .DEPTH(16),
-        .ADDR_WIDTH(4)
-    ) u_input_parser (
-        .clk(clk),
-        .rst_n(rst_n),
-        .buf_clear(input_clear),
-        .pkt_payload_data(uart_rx_data),
-        .pkt_payload_valid(uart_rx_valid),
-        .pkt_payload_last(uart_rx_valid && (uart_rx_data == 8'h0A || uart_rx_data == 8'h0D)), // Trigger on Newline/CR
-        .pkt_payload_ready(),
-        .rd_addr(input_rd_addr),
-        .rd_data(input_data),
-        .processing(),
-        .done(),
-        .invalid(),
-        .num_count(input_count)
-    );
+    assign buf_clear_req = input_clear;
+    assign buf_rd_addr = input_rd_addr;
+    assign input_data = buf_rd_data;
+    assign input_count = num_count;
     
     // Matrix Scanner Instance
     matrix_scanner #(

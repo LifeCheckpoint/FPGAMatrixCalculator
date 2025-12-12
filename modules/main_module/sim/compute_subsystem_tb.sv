@@ -184,8 +184,7 @@ module compute_subsystem_tb;
         confirm_btn = 0;
         
         // Wait for Validation and Execution Start
-        wait(dut.u_selector.state == 2'd3); // DONE state of selector? No, check internal signal
-        // Or wait for busy to go high then low?
+        wait(dut.u_selector.state == DONE);
         // Selector goes to DONE, then Compute Subsystem starts Executor.
         
         // Wait for Write Request from Executor
