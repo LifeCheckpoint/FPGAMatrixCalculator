@@ -57,10 +57,19 @@ module matrix_op_executor #(
 
     // Latched Inputs
     calc_type_t latched_op;
-    calc_type_t latched_op_mux; // Duplicate for MUX control to reduce fanout
+    
+    // Duplicated registers to reduce fanout
+    calc_type_t latched_op_status;
+    calc_type_t latched_op_bram;
+    calc_type_t latched_op_req;
+    calc_type_t latched_op_data;
+    calc_type_t latched_op_meta;
+    calc_type_t latched_op_name;
+    
     logic [2:0] latched_matrix_a;
     logic [2:0] latched_matrix_b;
     logic [31:0] latched_scalar;
+    logic mux_select_scalar; // Registered MUX select signal
 
     // Submodule Signals
     logic op_add_start, op_add_busy;
@@ -230,6 +239,13 @@ module matrix_op_executor #(
         if (!rst_n) begin
             state <= STATE_IDLE;
             latched_op <= CALC_ADD;
+            latched_op_status <= CALC_ADD;
+            latched_op_bram <= CALC_ADD;
+            latched_op_req <= CALC_ADD;
+            latched_op_data <= CALC_ADD;
+            latched_op_meta <= CALC_ADD;
+            latched_op_name <= CALC_ADD;
+            
             latched_matrix_a <= 0;
             latched_matrix_b <= 0;
             latched_scalar <= 0;
@@ -240,6 +256,7 @@ module matrix_op_executor #(
             op_conv_start <= 0;
             scalar_writer_req <= 0;
             scalar_writer_valid <= 0;
+            mux_select_scalar <= 0;
             done <= 0;
         end else begin
             // Default pulses
@@ -254,15 +271,23 @@ module matrix_op_executor #(
                 STATE_IDLE: begin
                     if (start) begin
                         latched_op <= op_type;
-                        latched_op_mux <= op_type;
+                        latched_op_status <= op_type;
+                        latched_op_bram <= op_type;
+                        latched_op_req <= op_type;
+                        latched_op_data <= op_type;
+                        latched_op_meta <= op_type;
+                        latched_op_name <= op_type;
+                        
                         latched_matrix_a <= matrix_a;
                         latched_matrix_b <= matrix_b;
                         latched_scalar <= scalar_in;
                         
                         if (op_type == CALC_SCALAR_MUL) begin
                             state <= STATE_PREPARE_SCALAR_REQ;
+                            mux_select_scalar <= 1'b1;
                         end else begin
                             state <= STATE_EXECUTE_START;
+                            mux_select_scalar <= 1'b0;
                         end
                     end
                 end
@@ -276,12 +301,7 @@ module matrix_op_executor #(
                 end
 
                 STATE_PREPARE_SCALAR_WAIT_ENABLE: begin
-                    scalar_writer_req <= 0; // Pulse request? Or hold? 
-                    // matrix_writer usually expects request held until ready? 
-                    // Let's check matrix_writer. It says "write_request" is input.
-                    // matrix_op_add holds it until writer_ready.
-                    // Let's hold it.
-                    scalar_writer_req <= 1;
+                    scalar_writer_req <= 1; // Hold request
                     
                     if (writer_ready) begin
                         scalar_writer_req <= 0; // Deassert once enabled
@@ -300,6 +320,7 @@ module matrix_op_executor #(
                     scalar_writer_valid <= 0;
                     if (write_done) begin
                         state <= STATE_EXECUTE_START;
+                        mux_select_scalar <= 1'b0;
                     end
                 end
 
@@ -336,7 +357,7 @@ module matrix_op_executor #(
     // Status Multiplexing
     //-------------------------------------------------------------------------
     always_comb begin
-        case (latched_op_mux)
+        case (latched_op_status)
             CALC_ADD: begin
                 current_busy = op_add_busy;
                 current_status = op_add_status;
@@ -368,80 +389,112 @@ module matrix_op_executor #(
     // Output Multiplexing
     //-------------------------------------------------------------------------
 
-    assign cycle_count = (latched_op_mux == CALC_CONV) ? op_conv_cycle_count : 32'd0;
+    assign cycle_count = (latched_op_status == CALC_CONV) ? op_conv_cycle_count : 32'd0;
 
+    // BRAM Read Address Mux
     always_comb begin
-        // Default assignments
         bram_read_addr = 0;
+        if (mux_select_scalar) begin
+            // Scalar mode doesn't read BRAM usually, or handled by scalar op
+            // Default 0
+        end else begin
+            case (latched_op_bram)
+                CALC_ADD:        bram_read_addr = op_add_addr;
+                CALC_MUL:        bram_read_addr = op_mul_addr;
+                CALC_SCALAR_MUL: bram_read_addr = op_scalar_addr;
+                CALC_TRANSPOSE:  bram_read_addr = op_t_addr;
+                CALC_CONV:       bram_read_addr = op_conv_addr;
+            endcase
+        end
+    end
+
+    // Write Request & Valid Mux
+    always_comb begin
         write_request = 0;
-        write_matrix_id = 0;
-        write_rows = 0;
-        write_cols = 0;
-        write_data = 0;
         write_data_valid = 0;
         
-        // Name muxing is tricky with arrays, handle separately
-        
-        if (state == STATE_PREPARE_SCALAR_REQ ||
-            state == STATE_PREPARE_SCALAR_WAIT_ENABLE ||
-            state == STATE_PREPARE_SCALAR_WRITE ||
-            state == STATE_PREPARE_SCALAR_WAIT_DONE) begin
-            
-            // Scalar Writer Control
+        if (mux_select_scalar) begin
             write_request = scalar_writer_req;
-            write_matrix_id = 3'(SCALAR_TEMP_ID);
-            write_rows = 1;
-            write_cols = 1;
-            write_data = latched_scalar;
             write_data_valid = scalar_writer_valid;
-            
         end else begin
-            // Op Module Control
-            case (latched_op_mux)
+            case (latched_op_req)
                 CALC_ADD: begin
-                    bram_read_addr = op_add_addr;
                     write_request = op_add_req;
-                    write_matrix_id = op_add_id;
-                    write_rows = op_add_rows;
-                    write_cols = op_add_cols;
-                    write_data = op_add_data;
                     write_data_valid = op_add_valid;
                 end
                 CALC_MUL: begin
-                    bram_read_addr = op_mul_addr;
                     write_request = op_mul_req;
-                    write_matrix_id = op_mul_id;
-                    write_rows = op_mul_rows;
-                    write_cols = op_mul_cols;
-                    write_data = op_mul_data;
                     write_data_valid = op_mul_valid;
                 end
                 CALC_SCALAR_MUL: begin
-                    bram_read_addr = op_scalar_addr;
                     write_request = op_scalar_req;
-                    write_matrix_id = op_scalar_id;
-                    write_rows = op_scalar_rows;
-                    write_cols = op_scalar_cols;
-                    write_data = op_scalar_data;
                     write_data_valid = op_scalar_valid;
                 end
                 CALC_TRANSPOSE: begin
-                    bram_read_addr = op_t_addr;
                     write_request = op_t_req;
-                    write_matrix_id = op_t_id;
-                    write_rows = op_t_rows;
-                    write_cols = op_t_cols;
-                    write_data = op_t_data;
                     write_data_valid = op_t_valid;
                 end
                 CALC_CONV: begin
-                    bram_read_addr = op_conv_addr;
                     write_request = op_conv_req;
+                    write_data_valid = op_conv_valid;
+                end
+            endcase
+        end
+    end
+
+    // Write Data Mux
+    always_comb begin
+        write_data = 0;
+        
+        if (mux_select_scalar) begin
+            write_data = latched_scalar;
+        end else begin
+            case (latched_op_data)
+                CALC_ADD:        write_data = op_add_data;
+                CALC_MUL:        write_data = op_mul_data;
+                CALC_SCALAR_MUL: write_data = op_scalar_data;
+                CALC_TRANSPOSE:  write_data = op_t_data;
+                CALC_CONV:       write_data = op_conv_data;
+            endcase
+        end
+    end
+
+    // Write Metadata Mux (ID, Rows, Cols)
+    always_comb begin
+        write_matrix_id = 0;
+        write_rows = 0;
+        write_cols = 0;
+        
+        if (mux_select_scalar) begin
+            write_matrix_id = 3'(SCALAR_TEMP_ID);
+            write_rows = 1;
+            write_cols = 1;
+        end else begin
+            case (latched_op_meta)
+                CALC_ADD: begin
+                    write_matrix_id = op_add_id;
+                    write_rows = op_add_rows;
+                    write_cols = op_add_cols;
+                end
+                CALC_MUL: begin
+                    write_matrix_id = op_mul_id;
+                    write_rows = op_mul_rows;
+                    write_cols = op_mul_cols;
+                end
+                CALC_SCALAR_MUL: begin
+                    write_matrix_id = op_scalar_id;
+                    write_rows = op_scalar_rows;
+                    write_cols = op_scalar_cols;
+                end
+                CALC_TRANSPOSE: begin
+                    write_matrix_id = op_t_id;
+                    write_rows = op_t_rows;
+                    write_cols = op_t_cols;
+                end
+                CALC_CONV: begin
                     write_matrix_id = op_conv_id;
                     write_rows = op_conv_rows;
                     write_cols = op_conv_cols;
-                    write_data = op_conv_data;
-                    write_data_valid = op_conv_valid;
                 end
             endcase
         end
@@ -452,13 +505,10 @@ module matrix_op_executor #(
     generate
         for (i = 0; i < 8; i++) begin : gen_name_mux
             always_comb begin
-                if (state == STATE_PREPARE_SCALAR_REQ ||
-                    state == STATE_PREPARE_SCALAR_WAIT_ENABLE ||
-                    state == STATE_PREPARE_SCALAR_WRITE ||
-                    state == STATE_PREPARE_SCALAR_WAIT_DONE) begin
+                if (mux_select_scalar) begin
                     write_name[i] = scalar_name[i];
                 end else begin
-                    case (latched_op_mux)
+                    case (latched_op_name)
                         CALC_ADD:        write_name[i] = op_add_name[i];
                         CALC_MUL:        write_name[i] = op_mul_name[i];
                         CALC_SCALAR_MUL: write_name[i] = op_scalar_name[i];

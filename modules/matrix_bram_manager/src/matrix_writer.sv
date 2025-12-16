@@ -51,8 +51,12 @@ module matrix_writer #(
         .base_addr(base_addr)
     );
 
-    always_comb begin
-        total_elements = actual_rows * actual_cols;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            total_elements <= '0;
+        end else if (current_state == IDLE && write_request) begin
+            total_elements <= actual_rows * actual_cols;
+        end
     end
 
     always_ff @(posedge clk or negedge rst_n) begin

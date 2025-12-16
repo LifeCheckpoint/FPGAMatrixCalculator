@@ -29,218 +29,148 @@ module char_stream_parser #(
     output logic        parse_done
 );
 
-    typedef enum logic [2:0] {
+    typedef enum logic [3:0] {
         IDLE,
-        SKIP_SPACE,
-        PARSE_NUMBER,
+        FETCH_SKIP,
+        CHECK_SKIP,
+        FETCH_NUM,
+        CHECK_NUM,
         END_NUMBER,
         WAIT_CONVERT,
         DONE
     } state_t;
     
-    state_t state, state_next;
+    state_t state;
     
     // Internal registers
     logic [15:0] read_ptr;
     logic [10:0] number_count;
     logic [7:0]  current_char;
-    logic        in_number;
     
     // Helper function: is space
     function automatic logic is_space(input logic [7:0] c);
         return (c == 8'h20);
     endfunction
     
-    // State machine
+    // Main State Machine and Data Path
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state <= IDLE;
-        end else begin
-            if (clear) begin
-                state <= IDLE;
-                $display("[%0t] Parser Cleared", $time);
-            end else begin
-                state <= state_next;
-                if (state != state_next)
-                    $display("[%0t] Parser State: %d -> %d (Ptr=%d, Len=%d)", $time, state, state_next, read_ptr, total_length);
-            end
-        end
-    end
-    
-    // Next state logic
-    always_comb begin
-        state_next = state;
-        
-        case (state)
-            IDLE: begin
-                if (start) begin
-                    state_next = SKIP_SPACE;
-                    end
-                end
-                
-                SKIP_SPACE: begin
-                if (read_ptr >= total_length) begin
-                    state_next = DONE;
-                end else if (!is_space(char_buffer[read_ptr])) begin
-                    state_next = PARSE_NUMBER;
-                    end
-                end
-                
-                PARSE_NUMBER: begin
-                if (read_ptr >= total_length) begin
-                    // End of stream, finish current number
-                    state_next = END_NUMBER;
-                end else if (is_space(char_buffer[read_ptr])) begin
-                    // Space encountered, end current number
-                    state_next = END_NUMBER;
-                end
-            end
-            
-            END_NUMBER: begin
-                state_next = WAIT_CONVERT;
-            end
-            
-            WAIT_CONVERT: begin
-                if (result_valid) begin
-                    if (read_ptr >= total_length) begin
-                        state_next = DONE;
-                    end else begin
-                        state_next = SKIP_SPACE;
-                    end
-                end
-            end
-            
-            DONE: begin
-                state_next = DONE;
-            end
-            
-            default: state_next = IDLE;
-        endcase
-    end
-    
-    // Read pointer and character management
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
             read_ptr <= 16'd0;
             current_char <= 8'd0;
-            in_number <= 1'b0;
             number_count <= 11'd0;
-        end else begin
-            if (clear) begin
-                read_ptr <= 16'd0;
-                current_char <= 8'd0;
-                in_number <= 1'b0;
-                number_count <= 11'd0;
-            end else begin
-                case (state)
-                    IDLE: begin
-                    read_ptr <= 16'd0;
-                    current_char <= 8'd0;
-                    in_number <= 1'b0;
-                    number_count <= 11'd0;
-                end
-                
-                SKIP_SPACE: begin
-                    current_char <= char_buffer[read_ptr];
-                    if (is_space(char_buffer[read_ptr])) begin
-                        read_ptr <= read_ptr + 16'd1;
-                    end else begin
-                        // Found start of number, advance to next char for PARSE_NUMBER state
-                        read_ptr <= read_ptr + 16'd1;
-                        if (read_ptr + 16'd1 < total_length) begin
-                            current_char <= char_buffer[read_ptr + 16'd1];
-                        end
-                    end
-                    in_number <= 1'b0;
-                end
-                
-                PARSE_NUMBER: begin
-                    if (state != state_next) begin
-                        // Transitioning out, don't advance yet
-                        in_number <= 1'b1;
-                    end else begin
-                        // Continue parsing
-                        read_ptr <= read_ptr + 16'd1;
-                        if (read_ptr + 16'd1 < total_length) begin
-                            current_char <= char_buffer[read_ptr + 16'd1];
-                        end
-                        in_number <= 1'b1;
-                        end
-                    end
-                    
-                    END_NUMBER: begin
-                        in_number <= 1'b0;
-                    end
-                    
-                    WAIT_CONVERT: begin
-                    if (result_valid) begin
-                        number_count <= number_count + 11'd1;
-                        if (read_ptr < total_length) begin
-                            read_ptr <= read_ptr + 16'd1;
-                            current_char <= char_buffer[read_ptr];
-                        end
-                        end
-                    end
-                    
-                    DONE: begin
-                        // Keep stable
-                    end
-                    
-                    default: begin
-                        read_ptr <= 16'd0;
-                        current_char <= 8'd0;
-                        in_number <= 1'b0;
-                        number_count <= 11'd0;
-                    end
-                endcase
-            end
-        end
-    end
-    
-    // Control signal generation
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
+            
+            // Outputs
             num_start <= 1'b0;
             num_char <= 8'd0;
             num_valid <= 1'b0;
             num_end <= 1'b0;
         end else begin
-            // Default: clear one-cycle pulses
-            num_start <= 1'b0;
-            num_end <= 1'b0;
-            
-            case (state)
-                SKIP_SPACE: begin
-                    if (state_next == PARSE_NUMBER) begin
-                        // Entering number, send start pulse
-                        num_start <= 1'b1;
-                        num_char <= char_buffer[read_ptr];
-                        num_valid <= 1'b1;
-                    end else begin
-                        num_valid <= 1'b0;
+            if (clear) begin
+                state <= IDLE;
+                read_ptr <= 16'd0;
+                current_char <= 8'd0;
+                number_count <= 11'd0;
+                $display("[%0t] Parser Cleared", $time);
+                
+                // Reset outputs
+                num_start <= 1'b0;
+                num_valid <= 1'b0;
+                num_end <= 1'b0;
+            end else begin
+                // Default pulse signals
+                num_start <= 1'b0;
+                num_valid <= 1'b0;
+                num_end <= 1'b0;
+                
+                case (state)
+                    IDLE: begin
+                        read_ptr <= 16'd0;
+                        number_count <= 11'd0;
+                        if (start) begin
+                            state <= FETCH_SKIP;
+                        end
                     end
-                end
-                
-                PARSE_NUMBER: begin
-                    if (state_next == PARSE_NUMBER) begin
-                        // Continue sending chars
-                        num_char <= current_char;
-                        num_valid <= 1'b1;
-                    end else begin
-                        // Leaving number state
-                        num_valid <= 1'b0;
+                    
+                    FETCH_SKIP: begin
+                        // Fetch character to check for space
+                        if (read_ptr >= total_length) begin
+                            state <= DONE;
+                        end else begin
+                            current_char <= char_buffer[read_ptr];
+                            state <= CHECK_SKIP;
+                        end
                     end
-                end
-                
-                END_NUMBER: begin
-                    num_end <= 1'b1;
-                    num_valid <= 1'b0;
-                end
-                
-                default: begin
-                    num_valid <= 1'b0;
-                end
-            endcase
+                    
+                    CHECK_SKIP: begin
+                        // Check if the fetched character is a space
+                        if (is_space(current_char)) begin
+                            // It's a space, skip it
+                            read_ptr <= read_ptr + 16'd1;
+                            state <= FETCH_SKIP;
+                        end else begin
+                            // It's not a space, so it's the start of a number
+                            num_start <= 1'b1;
+                            num_char <= current_char;
+                            num_valid <= 1'b1;
+                            
+                            // Move to next char
+                            read_ptr <= read_ptr + 16'd1;
+                            state <= FETCH_NUM;
+                        end
+                    end
+                    
+                    FETCH_NUM: begin
+                        // Fetch next character of the number
+                        if (read_ptr >= total_length) begin
+                            // End of stream ends the number
+                            state <= END_NUMBER;
+                        end else begin
+                            current_char <= char_buffer[read_ptr];
+                            state <= CHECK_NUM;
+                        end
+                    end
+                    
+                    CHECK_NUM: begin
+                        // Check if the fetched character is a space (end of number)
+                        if (is_space(current_char)) begin
+                            // Space found, number ends. 
+                            // Do NOT increment read_ptr here. The space is preserved 
+                            // and will be handled (skipped) after conversion.
+                            state <= END_NUMBER;
+                        end else begin
+                            // Valid number character
+                            num_char <= current_char;
+                            num_valid <= 1'b1;
+                            
+                            // Move to next char
+                            read_ptr <= read_ptr + 16'd1;
+                            state <= FETCH_NUM;
+                        end
+                    end
+                    
+                    END_NUMBER: begin
+                        num_end <= 1'b1;
+                        state <= WAIT_CONVERT;
+                    end
+                    
+                    WAIT_CONVERT: begin
+                        if (result_valid) begin
+                            number_count <= number_count + 11'd1;
+                            // Conversion done. Go back to skipping spaces.
+                            // Note: If we ended on a space, read_ptr still points to it.
+                            // FETCH_SKIP will read it, CHECK_SKIP will see it's a space and skip it.
+                            state <= FETCH_SKIP;
+                        end
+                    end
+                    
+                    DONE: begin
+                        // Stay in DONE until clear/reset
+                    end
+                    
+                    default: state <= IDLE;
+                endcase
+            end
         end
     end
     
