@@ -222,11 +222,13 @@ module matrix_input_handler (
             end
             
             DONE_STATE: begin
-                // Stay in done state until reset or new start
+                // Auto-reset to IDLE to release done signal (and buf_clear)
+                next_state = IDLE;
             end
             
             ERROR_STATE: begin
-                // Stay in error state until reset
+                // Auto-reset to IDLE to release error signal (and allow buf_clear)
+                next_state = IDLE;
             end
             
             default: next_state = IDLE;
@@ -249,6 +251,19 @@ module matrix_input_handler (
         end else begin
             case (state)
                 IDLE: begin
+                    if (start) begin
+                        is_named_matrix  <= 1'b0;
+                        matrix_id_reg    <= 3'd0;
+                        rows_reg         <= 8'd0;
+                        cols_reg         <= 8'd0;
+                        for (int i = 0; i < 8; i++) name_reg[i] <= 8'd0;
+                        element_count    <= 16'd0;
+                        buf_read_ptr     <= 11'd0;
+                        check_id         <= 3'd1;
+                    end
+                end
+
+                ERROR_STATE: begin
                     if (start) begin
                         is_named_matrix  <= 1'b0;
                         matrix_id_reg    <= 3'd0;

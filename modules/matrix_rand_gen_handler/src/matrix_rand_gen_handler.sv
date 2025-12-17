@@ -220,11 +220,13 @@ module matrix_rand_gen_handler (
             end
             
             DONE_STATE: begin
-                // Stay until reset or new start (could auto-reset to IDLE)
+                // Auto-reset to IDLE to release done signal
+                next_state = IDLE;
             end
             
             ERROR_STATE: begin
-                // Stay until reset
+                // Auto-reset to IDLE
+                next_state = IDLE;
             end
             
             default: next_state = IDLE;
@@ -246,6 +248,14 @@ module matrix_rand_gen_handler (
         end else begin
             case (state)
                 IDLE: begin
+                    if (start) begin
+                        generated_count <= 32'd0;
+                        check_id        <= 3'd1;
+                        buf_rd_addr     <= 11'd0; // Address 0 for m
+                    end
+                end
+
+                ERROR_STATE: begin
                     if (start) begin
                         generated_count <= 32'd0;
                         check_id        <= 3'd1;

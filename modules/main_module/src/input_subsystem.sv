@@ -96,9 +96,10 @@ module input_subsystem #(
     // Global Input Buffer (ascii_num_sep_top)
     //-------------------------------------------------------------------------
     
-    // Clear buffer when mode changes OR when operation completes successfully
-    // This allows consecutive operations without switching modes
-    assign buf_clear = (current_mode != last_mode) || settings_done || input_done || gen_done;
+    // Clear buffer when mode changes OR when operation completes successfully OR on error
+    // This allows consecutive operations without switching modes and prevents deadlock on error
+    // Note: settings_error is persistent, so we don't include it to avoid locking the buffer
+    assign buf_clear = (current_mode != last_mode) || settings_done || input_done || gen_done || input_error || gen_error;
     
     // Generate payload_last on terminator (newline/CR)
     wire internal_pkt_last;
