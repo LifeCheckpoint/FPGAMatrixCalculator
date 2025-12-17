@@ -397,8 +397,29 @@ module top_module (
         end
     end
     
+    // LED Pulse Extender for Done Signal
+    logic [24:0] done_led_cnt;
+    logic        done_led_extended;
+    
+    always_ff @(posedge clk_50m or negedge rst_n) begin
+        if (!rst_n) begin
+            done_led_cnt <= 0;
+            done_led_extended <= 0;
+        end else begin
+            if (sys_done) begin
+                done_led_cnt <= 25'd25_000_000; // Load counter (0.5s at 50MHz)
+                done_led_extended <= 1'b1;
+            end else if (done_led_cnt > 0) begin
+                done_led_cnt <= done_led_cnt - 1;
+                done_led_extended <= 1'b1;
+            end else begin
+                done_led_extended <= 1'b0;
+            end
+        end
+    end
+
     assign led[0] = sys_error;
-    assign led[1] = sys_done;
+    assign led[1] = done_led_extended;
     assign led[2] = sys_busy;
     assign led[7:3] = op_mode_raw; // Debug: Show current mode
     

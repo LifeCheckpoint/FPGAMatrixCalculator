@@ -11,11 +11,11 @@ module switches2op (
 
 always_comb begin
     case ({sw_mat_input, sw_gen, sw_show, sw_calculate, sw_settings})
-        4'b00001: op = 3'd5; // Settings
-        4'b00010: op = 3'd4; // Calculate
-        4'b00100: op = 3'd3; // Show
-        4'b01000: op = 3'd2; // Generate
-        4'b10000: op = 3'd1; // Matrix Input
+        5'b00001: op = 3'd5; // Settings
+        5'b00010: op = 3'd4; // Calculate
+        5'b00100: op = 3'd3; // Show
+        5'b01000: op = 3'd2; // Generate
+        5'b10000: op = 3'd1; // Matrix Input
         default: op = 3'd0; // Invalid
     endcase
 end
