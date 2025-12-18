@@ -220,6 +220,8 @@ module compute_subsystem #(
     end
 
     bin_to_bcd u_bcd (
+        .clk(clk),
+        .rst_n(rst_n),
         .bin_in(bcd_in),
         .bcd_out(bcd_out)
     );

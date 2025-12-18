@@ -206,6 +206,9 @@ module matrix_op_selector #(
                             input_rd_addr <= 0;
                             state <= WAIT_M;
                         end else begin
+                            // Data insufficient or invalid from previous operations.
+                            // Must clear input buffer to unlock validator for new input.
+                            input_clear <= 1;
                             state <= GET_DIMS;
                         end
                     end
@@ -213,10 +216,16 @@ module matrix_op_selector #(
                 
                 GET_DIMS: begin
                     // Wait for 2 numbers (m, n) and confirm
-                    if (confirm_btn && input_count >= 2) begin
-                        // Read m
-                        input_rd_addr <= 0;
-                        state <= WAIT_M;
+                    if (confirm_btn) begin
+                        if (input_count >= 2) begin
+                            // Read m
+                            input_rd_addr <= 0;
+                            state <= WAIT_M;
+                        end else begin
+                            // User pressed confirm but data is missing.
+                            // Since we can't append to a closed packet, we must clear and ask for retry.
+                            input_clear <= 1;
+                        end
                     end
                 end
                 
@@ -287,9 +296,13 @@ module matrix_op_selector #(
                 end
                 
                 SELECT_A: begin
-                    if (confirm_btn && input_count >= 1) begin
-                        input_rd_addr <= 0;
-                        state <= WAIT_ID_A;
+                    if (confirm_btn) begin
+                        if (input_count >= 1) begin
+                            input_rd_addr <= 0;
+                            state <= WAIT_ID_A;
+                        end else begin
+                            input_clear <= 1;
+                        end
                     end
                 end
                 
@@ -340,9 +353,13 @@ module matrix_op_selector #(
                 end
                 
                 SELECT_B: begin
-                    if (confirm_btn && input_count >= 1) begin
-                        input_rd_addr <= 0;
-                        state <= WAIT_ID_B;
+                    if (confirm_btn) begin
+                        if (input_count >= 1) begin
+                            input_rd_addr <= 0;
+                            state <= WAIT_ID_B;
+                        end else begin
+                            input_clear <= 1;
+                        end
                     end
                 end
                 

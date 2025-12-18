@@ -28,6 +28,8 @@ module counting_down (
     );
 
     bin_to_bcd u_bin2bcd (
+        .clk     (clk),
+        .rst_n   (rst_n),
         .bin_in  (counter),
         .bcd_out (bcd_data)
     );

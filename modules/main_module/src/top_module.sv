@@ -192,6 +192,10 @@ module top_module (
     // Input Subsystem
     //-------------------------------------------------------------------------
     
+    // Gated UART Valid Signal for Input Subsystem
+    logic input_rx_valid;
+    assign input_rx_valid = rx_done && (mode_is_input || mode_is_gen || mode_is_settings);
+
     input_subsystem #(
         .BLOCK_SIZE(1152),
         .DATA_WIDTH(32),
@@ -207,7 +211,7 @@ module top_module (
         .done(input_done),
         .error(input_error),
         .uart_rx_data(rx_data),
-        .uart_rx_valid(rx_done),
+        .uart_rx_valid(input_rx_valid),
         .settings_max_row(settings_max_row),
         .settings_max_col(settings_max_col),
         .settings_data_min(settings_data_min),
@@ -231,6 +235,10 @@ module top_module (
     // Compute Subsystem
     //-------------------------------------------------------------------------
     
+    // Gated UART Valid Signal for Compute Subsystem
+    logic compute_rx_valid;
+    assign compute_rx_valid = rx_done && mode_is_calc;
+
     compute_subsystem #(
         .BLOCK_SIZE(1152),
         .DATA_WIDTH(32),
@@ -251,7 +259,7 @@ module top_module (
         .seg(compute_seg),
         .an(compute_an),
         .uart_rx_data(rx_data),
-        .uart_rx_valid(rx_done),
+        .uart_rx_valid(compute_rx_valid),
         .uart_tx_data(compute_tx_data),
         .uart_tx_valid(compute_tx_valid),
         .uart_tx_ready(!tx_busy),
