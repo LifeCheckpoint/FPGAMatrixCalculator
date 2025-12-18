@@ -30,6 +30,14 @@ module winograd_conv_10x12_sim;
             $display("Time=%0t: WRITE state - round_idx=%0d, tile_i=%0d, tile_j=%0d, writing to result_tiles[%0d][%0d]",
                      $time, dut.round_idx, dut.tile_i, dut.tile_j, dut.tile_i, dut.tile_j);
         end
+        if (dut.state == dut.ST_DIVIDE) begin
+             if (dut.div_start) $display("Time=%0t: DIVIDE state - Started", $time);
+             // Monitor divider progress
+             if (dut.division_inst.busy) begin
+                 if (dut.division_inst.col_idx == 0) // Print once per row
+                    $display("Time=%0t: DIVIDE progress - Row %0d", $time, dut.division_inst.row_idx);
+             end
+        end
         if (dut.tc_inst.state == dut.tc_inst.S_IDLE && dut.tc_start) begin
             $display("Time=%0t: tile_controller START - Sampling tile_in", $time);
         end
@@ -110,6 +118,13 @@ module winograd_conv_10x12_sim;
 
         $display("\nSimulation completed");
         #1000 $finish;
+    end
+
+    // Watchdog timer
+    initial begin
+        #1000000; // 1ms timeout
+        $display("\nError: Simulation timed out!");
+        $finish;
     end
 
 endmodule

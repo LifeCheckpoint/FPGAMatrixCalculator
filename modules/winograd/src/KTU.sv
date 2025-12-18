@@ -9,160 +9,137 @@ module kernel_transform_unit (
     output logic transform_done
 );
 
-localparam S_IDLE   = 2'b00;
-localparam S_CALC_T = 2'b01;
-localparam S_CALC_U = 2'b10;
-localparam S_DONE   = 2'b11;
+    typedef enum logic [1:0] {
+        S_IDLE,
+        S_PASS1, // Calculate T = G * g (columns)
+        S_PASS2, // Calculate U = T * G^T (rows)
+        S_DONE
+    } state_t;
 
-logic [1:0] state;
-logic [31:0] T [0:5][0:2];
+    state_t state;
+    logic [2:0] idx; // Counter
+    logic [31:0] T [0:5][0:2]; // Intermediate matrix (6x3)
 
-// S_IDLE -> S_CALC_T -> S_CALC_U -> S_DONE -> S_IDLE
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        state <= S_IDLE;
-        transform_done <= 1'b0;
-    end else begin
-        case (state)
-            S_IDLE: begin
-                transform_done <= 1'b0;
-                if (start) begin
-                    state <= S_CALC_T;
-                end
-            end
-            S_CALC_T: begin
-                state <= S_CALC_U;
-            end
-            S_CALC_U: begin
-                state <= S_DONE;
-            end
-            S_DONE: begin
-                transform_done <= 1'b1;
-                state <= S_IDLE;
-            end
-            default: begin
-                state <= S_IDLE;
-                transform_done <= 1'b0;
-            end
-        endcase
-    end
-end
+    // 1D Transform signals
+    logic [31:0] trans_in [0:2];
+    logic [31:0] trans_out [0:5];
 
-// Data path
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        // Reset all registers
-        for (int i = 0; i < 6; i++) begin
-            for (int j = 0; j < 3; j++) begin
-                T[i][j] <= 32'd0;
-            end
-        end
-        for (int i = 0; i < 6; i++) begin
-            for (int j = 0; j < 6; j++) begin
-                kernel_out[i][j] <= 32'd0;
-            end
-        end
-    end else begin
-        case(state)
-            S_IDLE: begin
-                if (start) begin
-                    for (int i = 0; i < 6; i++) begin
-                        for (int j = 0; j < 3; j++) begin
-                            T[i][j] <= 32'd0;
-                        end
+    // Instantiate 1D Transform helper
+    Winograd_Kernel_Transform_1D transform_1d (
+        .g(trans_in),
+        .t(trans_out)
+    );
+
+    // State Machine
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= S_IDLE;
+            transform_done <= 1'b0;
+            idx <= 3'd0;
+        end else begin
+            case (state)
+                S_IDLE: begin
+                    transform_done <= 1'b0;
+                    idx <= 3'd0;
+                    if (start) begin
+                        state <= S_PASS1;
                     end
                 end
-            end
-            
-            S_CALC_T: begin
-                // First step, calculate T = G * g (6x3 matrix)
 
-                // T[0][j] = 6 * kernel_in[0][j]
-                T[0][0] <= (kernel_in[0][0] << 2) + (kernel_in[0][0] << 1);
-                T[0][1] <= (kernel_in[0][1] << 2) + (kernel_in[0][1] << 1);
-                T[0][2] <= (kernel_in[0][2] << 2) + (kernel_in[0][2] << 1);
-                
-                // T[1][j] = -((g0 + g3 + g6) << 2)
-                T[1][0] <= -((kernel_in[0][0] + kernel_in[1][0] + kernel_in[2][0]) << 2);
-                T[1][1] <= -((kernel_in[0][1] + kernel_in[1][1] + kernel_in[2][1]) << 2);
-                T[1][2] <= -((kernel_in[0][2] + kernel_in[1][2] + kernel_in[2][2]) << 2);
-                
-                // T[2][j] = -((g0 - g3 + g6) << 2)
-                T[2][0] <= -((kernel_in[0][0] - kernel_in[1][0] + kernel_in[2][0]) << 2);
-                T[2][1] <= -((kernel_in[0][1] - kernel_in[1][1] + kernel_in[2][1]) << 2);
-                T[2][2] <= -((kernel_in[0][2] - kernel_in[1][2] + kernel_in[2][2]) << 2);
-                
-                // T[3][j] = g0 + (g3 << 1) + (g6 << 2)
-                T[3][0] <= kernel_in[0][0] + (kernel_in[1][0] << 1) + (kernel_in[2][0] << 2);
-                T[3][1] <= kernel_in[0][1] + (kernel_in[1][1] << 1) + (kernel_in[2][1] << 2);
-                T[3][2] <= kernel_in[0][2] + (kernel_in[1][2] << 1) + (kernel_in[2][2] << 2);
-                
-                // T[4][j] = g0 - (g3 << 1) + (g6 << 2)
-                T[4][0] <= kernel_in[0][0] - (kernel_in[1][0] << 1) + (kernel_in[2][0] << 2);
-                T[4][1] <= kernel_in[0][1] - (kernel_in[1][1] << 1) + (kernel_in[2][1] << 2);
-                T[4][2] <= kernel_in[0][2] - (kernel_in[1][2] << 1) + (kernel_in[2][2] << 2);
-                
-                // T[5][j] = 24 * kernel_in[2][j]
-                T[5][0] <= (kernel_in[2][0] << 4) + (kernel_in[2][0] << 3);
-                T[5][1] <= (kernel_in[2][1] << 4) + (kernel_in[2][1] << 3);
-                T[5][2] <= (kernel_in[2][2] << 4) + (kernel_in[2][2] << 3);
+                S_PASS1: begin
+                    // Process 3 columns
+                    if (idx == 3'd2) begin
+                        idx <= 3'd0;
+                        state <= S_PASS2;
+                    end else begin
+                        idx <= idx + 3'd1;
+                    end
+                end
+
+                S_PASS2: begin
+                    // Process 6 rows
+                    if (idx == 3'd5) begin
+                        idx <= 3'd0;
+                        state <= S_DONE;
+                    end else begin
+                        idx <= idx + 3'd1;
+                    end
+                end
+
+                S_DONE: begin
+                    transform_done <= 1'b1;
+                    state <= S_IDLE;
+                end
+
+                default: state <= S_IDLE;
+            endcase
+        end
+    end
+
+    // Data Path Muxing
+    always_comb begin
+        // Default assignment
+        for (int i = 0; i < 3; i++) begin
+            trans_in[i] = 32'd0;
+        end
+
+        case (state)
+            S_PASS1: begin
+                // Process columns of kernel_in (3x3)
+                // Input: Column 'idx' of kernel_in
+                for (int i = 0; i < 3; i++) begin
+                    trans_in[i] = kernel_in[i][idx];
+                end
+            end
+
+            S_PASS2: begin
+                // Process rows of T (6x3)
+                // Input: Row 'idx' of T
+                for (int i = 0; i < 3; i++) begin
+                    trans_in[i] = T[idx][i];
+                end
             end
             
-            S_CALC_U: begin
-                // Second step, calculate U' = T * G'^T (6x6 matrix)
-                
-                // Column 0
-                kernel_out[0][0] <= (T[0][0] << 2) + (T[0][0] << 1);
-                kernel_out[0][1] <= -((T[0][0] + T[0][1] + T[0][2]) << 2);
-                kernel_out[0][2] <= -((T[0][0] - T[0][1] + T[0][2]) << 2);
-                kernel_out[0][3] <= T[0][0] + (T[0][1] << 1) + (T[0][2] << 2);
-                kernel_out[0][4] <= T[0][0] - (T[0][1] << 1) + (T[0][2] << 2);
-                kernel_out[0][5] <= (T[0][2] << 4) + (T[0][2] << 3);
-                
-                // Column 1
-                kernel_out[1][0] <= (T[1][0] << 2) + (T[1][0] << 1);
-                kernel_out[1][1] <= -((T[1][0] + T[1][1] + T[1][2]) << 2);
-                kernel_out[1][2] <= -((T[1][0] - T[1][1] + T[1][2]) << 2);
-                kernel_out[1][3] <= T[1][0] + (T[1][1] << 1) + (T[1][2] << 2);
-                kernel_out[1][4] <= T[1][0] - (T[1][1] << 1) + (T[1][2] << 2);
-                kernel_out[1][5] <= (T[1][2] << 4) + (T[1][2] << 3);
-                
-                // Column 2
-                kernel_out[2][0] <= (T[2][0] << 2) + (T[2][0] << 1);
-                kernel_out[2][1] <= -((T[2][0] + T[2][1] + T[2][2]) << 2);
-                kernel_out[2][2] <= -((T[2][0] - T[2][1] + T[2][2]) << 2);
-                kernel_out[2][3] <= T[2][0] + (T[2][1] << 1) + (T[2][2] << 2);
-                kernel_out[2][4] <= T[2][0] - (T[2][1] << 1) + (T[2][2] << 2);
-                kernel_out[2][5] <= (T[2][2] << 4) + (T[2][2] << 3);
-                
-                // Column 3
-                kernel_out[3][0] <= (T[3][0] << 2) + (T[3][0] << 1);
-                kernel_out[3][1] <= -((T[3][0] + T[3][1] + T[3][2]) << 2);
-                kernel_out[3][2] <= -((T[3][0] - T[3][1] + T[3][2]) << 2);
-                kernel_out[3][3] <= T[3][0] + (T[3][1] << 1) + (T[3][2] << 2);
-                kernel_out[3][4] <= T[3][0] - (T[3][1] << 1) + (T[3][2] << 2);
-                kernel_out[3][5] <= (T[3][2] << 4) + (T[3][2] << 3);
-                
-                // Column 4
-                kernel_out[4][0] <= (T[4][0] << 2) + (T[4][0] << 1);
-                kernel_out[4][1] <= -((T[4][0] + T[4][1] + T[4][2]) << 2);
-                kernel_out[4][2] <= -((T[4][0] - T[4][1] + T[4][2]) << 2);
-                kernel_out[4][3] <= T[4][0] + (T[4][1] << 1) + (T[4][2] << 2);
-                kernel_out[4][4] <= T[4][0] - (T[4][1] << 1) + (T[4][2] << 2);
-                kernel_out[4][5] <= (T[4][2] << 4) + (T[4][2] << 3);
-                
-                // Column 5
-                kernel_out[5][0] <= (T[5][0] << 2) + (T[5][0] << 1);
-                kernel_out[5][1] <= -((T[5][0] + T[5][1] + T[5][2]) << 2);
-                kernel_out[5][2] <= -((T[5][0] - T[5][1] + T[5][2]) << 2);
-                kernel_out[5][3] <= T[5][0] + (T[5][1] << 1) + (T[5][2] << 2);
-                kernel_out[5][4] <= T[5][0] - (T[5][1] << 1) + (T[5][2] << 2);
-                kernel_out[5][5] <= (T[5][2] << 4) + (T[5][2] << 3);
-            end
-            
-            S_DONE: begin end
+            default: ;
         endcase
     end
-end
+
+    // Result Storage
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (int i = 0; i < 6; i++) begin
+                for (int j = 0; j < 3; j++) begin
+                    T[i][j] <= 32'd0;
+                end
+            end
+            for (int i = 0; i < 6; i++) begin
+                for (int j = 0; j < 6; j++) begin
+                    kernel_out[i][j] <= 32'd0;
+                end
+            end
+        end else begin
+            case (state)
+                S_IDLE: begin
+                    // Optional clear
+                end
+
+                S_PASS1: begin
+                    // Store result into Column 'idx' of T
+                    // trans_out is size 6
+                    for (int i = 0; i < 6; i++) begin
+                        T[i][idx] <= trans_out[i];
+                    end
+                end
+
+                S_PASS2: begin
+                    // Store result into Row 'idx' of kernel_out
+                    // trans_out is size 6
+                    for (int i = 0; i < 6; i++) begin
+                        kernel_out[idx][i] <= trans_out[i];
+                    end
+                end
+            endcase
+        end
+    end
 
 endmodule

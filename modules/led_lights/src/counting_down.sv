@@ -20,7 +20,7 @@ module counting_down (
     wire [3:0] bcd_data [0:3];
     reg        led_valid;
 
-    clock_divider #(.DIV_VALUE(100_000_000)) u_clk_div (
+    clock_divider #(.DIV_VALUE(25_000_000)) u_clk_div (
         .clk    (clk),
         .rst_n  (rst_n),
         .enable (state == COUNTING),

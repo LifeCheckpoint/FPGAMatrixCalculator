@@ -17,6 +17,7 @@ module winograd_conv_10x12 (
         ST_WAIT_CLEAR,
         ST_WAIT,
         ST_WRITE,
+        ST_DIVIDE,
         ST_FINISH
     } state_t;
 
@@ -31,6 +32,9 @@ module winograd_conv_10x12 (
     logic [31:0] tc_tile_in    [0:5][0:5];
     logic [31:0] tc_result_out [0:3][0:3];
     logic        tc_done;
+    
+    logic        div_start;
+    logic        div_done;
     
     logic [31:0] kernel_reg [0:2][0:2];
     logic [31:0] image_reg [0:9][0:11];
@@ -56,6 +60,10 @@ module winograd_conv_10x12 (
     
     // division ny 576 = 4^2 * 6^2
     division_576_8x10 division_inst (
+        .clk(clk),
+        .rst_n(rst_n),
+        .start(div_start),
+        .done(div_done),
         .input_array(transform_out),
         .output_array(result_out)
     );
@@ -72,11 +80,15 @@ module winograd_conv_10x12 (
             round_idx <= '0;
             done <= 1'b0;
             tc_start <= 1'b0;
+            div_start <= 1'b0;
             kernel_reg <= '{default: 32'd0};
             tc_kernel_in <= '{default: 32'd0};
             image_reg <= '{default: 32'd0};
             result_tiles <= '{default: 32'd0};
         end else begin
+            // Default pulse reset
+            div_start <= 1'b0;
+            
             case (state)
                 ST_IDLE: begin
                     if (start) begin
@@ -123,10 +135,18 @@ module winograd_conv_10x12 (
                     result_tiles[tile_i][tile_j] <= tc_result_out;
 
                     if (round_idx == NUM_ROUNDS - 1) begin
-                        state <= ST_FINISH;
+                        state <= ST_DIVIDE;
                     end else begin
                         round_idx <= round_idx + 4'd1;
                         state <= ST_PREP;
+                    end
+                end
+                
+                ST_DIVIDE: begin
+                    div_start <= 1'b1;
+                    if (div_done) begin
+                        div_start <= 1'b0;
+                        state <= ST_FINISH;
                     end
                 end
 

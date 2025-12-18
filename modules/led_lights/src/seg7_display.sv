@@ -22,7 +22,7 @@ module seg7_display (
             digit_select <= 0;
         end else begin
             refresh_counter <= refresh_counter + 1;
-            if (refresh_counter == 16'd50000) begin
+            if (refresh_counter == 16'd25000) begin
                 refresh_counter <= 0;
                 digit_select <= digit_select + 1;
             end

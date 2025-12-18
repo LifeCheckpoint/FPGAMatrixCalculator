@@ -19,7 +19,7 @@ module calc_method_show (
             digit_select <= 0;
         end else begin
             refresh_counter <= refresh_counter + 1;
-            if (refresh_counter == 16'd50000) begin
+            if (refresh_counter == 16'd25000) begin
                 refresh_counter <= 0;
                 digit_select <= digit_select + 1;
             end
@@ -42,9 +42,9 @@ module calc_method_show (
         case (method_sel)
             3'd0: char_seg = 8'b10000111; // T (d,e,f,g)
             3'd1: char_seg = 8'b10001000; // A (a,b,c,e,f,g)
-            3'd2: char_seg = 8'b10000011; // B (c,d,e,f,g)
-            3'd3: char_seg = 8'b11000110; // C (a,d,e,f)
-            3'd4: char_seg = 8'b11110001; // J (b,c,d)
+            3'd2: char_seg = 8'b11000110; // C (a,d,e,f) - Matrix Mul
+            3'd3: char_seg = 8'b10000011; // B (c,d,e,f,g) - Scalar Mul
+            3'd4: char_seg = 8'b11110001; // J (b,c,d) - Convolution
             default: char_seg = 8'b11111111; // Blank
         endcase
     end

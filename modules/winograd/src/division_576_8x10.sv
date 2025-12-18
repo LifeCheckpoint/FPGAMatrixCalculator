@@ -1,32 +1,61 @@
 `timescale 1ns / 1ps
 
 module division_576_8x10 (
+    input  logic        clk,
+    input  logic        rst_n,
+    input  logic        start,
+    output logic        done,
     input  logic [31:0] input_array  [7:0][9:0],
     output logic [31:0] output_array [7:0][9:0]
 );
 
-    genvar i, j;
-    generate
-        for (i = 0; i < 8; i++) begin : gen_row
-            for (j = 0; j < 10; j++) begin : gen_col
-                // Optimization: Replace division with multiplication to save LUTs
-                // Original: (input >> 6) / 9
-                // New: (input >>> 6) * 1908874354 >>> 34
-                // 1908874354 approx 2^34 / 9
+    logic [3:0] row_idx;
+    logic [3:0] col_idx;
+    logic       busy;
+    
+    // Output storage
+    logic [31:0] result_store [7:0][9:0];
+    
+    assign output_array = result_store;
+    
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            busy <= 1'b0;
+            done <= 1'b0;
+            row_idx <= 0;
+            col_idx <= 0;
+            for (int i=0; i<8; i++) begin
+                for (int j=0; j<10; j++) begin
+                    result_store[i][j] <= 32'd0;
+                end
+            end
+        end else begin
+            done <= 1'b0;
+            
+            if (start && !busy) begin
+                busy <= 1'b1;
+                row_idx <= 0;
+                col_idx <= 0;
+            end else if (busy) begin
+                // Perform division: input / 576
+                // Using standard division operator as requested.
+                // Synthesizer should optimize this to multiplication by reciprocal.
+                result_store[row_idx][col_idx] <= signed'(input_array[row_idx][col_idx]) / 576;
                 
-                logic signed [31:0] s_input;
-                logic signed [31:0] s_shifted;
-                logic signed [63:0] mult_res;
-                
-                assign s_input = signed'(input_array[i][j]);
-                assign s_shifted = s_input >>> 6; // Arithmetic shift for signed data
-                
-                // Use 64-bit signed multiplication
-                assign mult_res = s_shifted * signed'(64'd1908874354);
-                
-                assign output_array[i][j] = mult_res >>> 34;
+                // Increment
+                if (col_idx == 9) begin
+                    col_idx <= 0;
+                    if (row_idx == 7) begin
+                        busy <= 1'b0;
+                        done <= 1'b1;
+                    end else begin
+                        row_idx <= row_idx + 1;
+                    end
+                end else begin
+                    col_idx <= col_idx + 1;
+                end
             end
         end
-    endgenerate
+    end
 
 endmodule

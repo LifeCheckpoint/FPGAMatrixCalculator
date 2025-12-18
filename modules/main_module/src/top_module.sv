@@ -20,18 +20,18 @@ module top_module (
     // Internal Signals
     //-------------------------------------------------------------------------
 
-    // Clock Generation (100MHz -> 50MHz)
-    logic clk_50m;
-    logic clk_div_reg;
+    // Clock Generation (100MHz -> 25MHz)
+    logic clk_25m;
+    logic [1:0] clk_div_cnt;
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n)
-            clk_div_reg <= 1'b0;
+            clk_div_cnt <= 2'b00;
         else
-            clk_div_reg <= ~clk_div_reg;
+            clk_div_cnt <= clk_div_cnt + 1'b1;
     end
     
-    assign clk_50m = clk_div_reg;
+    assign clk_25m = clk_div_cnt[1];
 
     // Debounced Button
     logic btn_debounced;
@@ -110,9 +110,9 @@ module top_module (
     //-------------------------------------------------------------------------
     
     key_debounce #(
-        .CNT_MAX(20'd1000000) // 20ms at 50MHz
+        .CNT_MAX(20'd500000) // 20ms at 25MHz
     ) u_debounce (
-        .clk(clk_50m),
+        .clk(clk_25m),
         .rst_n(rst_n),
         .key_in(btn), // Assuming active low button? No, usually active low on board but module expects key_in.
                       // key_debounce logic: key_out <= 1'b1 when not pressed (reset).
@@ -127,7 +127,7 @@ module top_module (
     logic btn_pressed_pulse;
     logic btn_d1;
     
-    always_ff @(posedge clk_50m or negedge rst_n) begin
+    always_ff @(posedge clk_25m or negedge rst_n) begin
         if (!rst_n) begin
             btn_d1 <= 1'b1;
             btn_pressed_pulse <= 1'b0;
@@ -142,10 +142,10 @@ module top_module (
     //-------------------------------------------------------------------------
     
     uart_rx #(
-        .CLK_FREQ(50_000_000),
+        .CLK_FREQ(25_000_000),
         .BAUD_RATE(115200)
     ) u_uart_rx (
-        .clk(clk_50m),
+        .clk(clk_25m),
         .rst_n(rst_n),
         .rx(uart_rx),
         .rx_data(rx_data),
@@ -153,10 +153,10 @@ module top_module (
     );
     
     uart_tx #(
-        .CLK_FREQ(50_000_000),
+        .CLK_FREQ(25_000_000),
         .BAUD_RATE(115200)
     ) u_uart_tx (
-        .clk(clk_50m),
+        .clk(clk_25m),
         .rst_n(rst_n),
         .tx_start(tx_start),
         .tx_data(tx_data),
@@ -202,7 +202,7 @@ module top_module (
         .DATA_WIDTH(32),
         .ADDR_WIDTH(14)
     ) u_input_sub (
-        .clk(clk_50m),
+        .clk(clk_25m),
         .rst_n(rst_n),
         .mode_is_input(mode_is_input),
         .mode_is_gen(mode_is_gen),
@@ -245,7 +245,7 @@ module top_module (
         .DATA_WIDTH(32),
         .ADDR_WIDTH(14)
     ) u_compute_sub (
-        .clk(clk_50m),
+        .clk(clk_25m),
         .rst_n(rst_n),
         .start(btn_pressed_pulse && mode_is_calc),
         .confirm_btn(btn_pressed_pulse),
@@ -287,7 +287,7 @@ module top_module (
         .BLOCK_SIZE(1152),
         .ADDR_WIDTH(14)
     ) u_reader_all (
-        .clk(clk_50m),
+        .clk(clk_25m),
         .rst_n(rst_n),
         .start(mode_is_show && btn_pressed_pulse), // Start showing on button press? Or auto?
                                                    // Requirement: "Matrix Display" mode.
@@ -344,7 +344,7 @@ module top_module (
         .ADDR_WIDTH(14),
         .DEPTH(8192 + 1024)
     ) u_storage_mgr (
-        .clk(clk_50m),
+        .clk(clk_25m),
         .rst_n(rst_n),
         .write_request(storage_wr_req),
         .write_ready(storage_wr_ready),
@@ -416,13 +416,13 @@ module top_module (
     logic [24:0] done_led_cnt;
     logic        done_led_extended;
     
-    always_ff @(posedge clk_50m or negedge rst_n) begin
+    always_ff @(posedge clk_25m or negedge rst_n) begin
         if (!rst_n) begin
             done_led_cnt <= 0;
             done_led_extended <= 0;
         end else begin
             if (sys_done) begin
-                done_led_cnt <= 25'd25_000_000; // Load counter (0.5s at 50MHz)
+                done_led_cnt <= 25'd12_500_000; // Load counter (0.5s at 25MHz)
                 done_led_extended <= 1'b1;
             end else if (done_led_cnt > 0) begin
                 done_led_cnt <= done_led_cnt - 1;

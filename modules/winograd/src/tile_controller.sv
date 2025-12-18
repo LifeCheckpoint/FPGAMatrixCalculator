@@ -32,22 +32,27 @@ module tile_controller (
     
     // Pointwise multiplication signals
     logic mult_start;
-    logic [31:0] mult_a [6][6];
-    logic [31:0] mult_b [6][6];
-    logic [63:0] mult_c [6][6];
+    logic signed [19:0] mult_U [0:5][0:5];
+    logic signed [19:0] mult_V [0:5][0:5];
+    logic signed [39:0] mult_M [0:5][0:5];
     logic mult_done;
+    logic mult_busy;
     
     // RTU signals
     logic rtu_start;
-    logic [31:0] rtu_matrix_in [0:5][0:5];
-    logic [31:0] rtu_matrix_out [0:3][0:3];
+    logic signed [39:0] rtu_M [0:5][0:5];
+    logic signed [39:0] rtu_R [0:3][0:3];
     logic rtu_done;
+    logic rtu_busy;
     
     // Internal registers
     logic [31:0] U [0:5][0:5];  // Transformed kernel
     logic [31:0] V [0:5][0:5];  // Transformed tile
-    logic [31:0] M [0:5][0:5];  // Pointwise product result
+    logic signed [39:0] M [0:5][0:5];  // Pointwise product result
     
+    logic ktu_finished;
+    logic ttu_finished;
+
     // FSM
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -63,7 +68,7 @@ module tile_controller (
                 end
                 
                 S_TRANSFORM: begin
-                    if (ktu_done && ttu_done) begin
+                    if (ktu_finished && ttu_finished) begin
                         state <= S_POINTWISE_MULT;
                     end
                 end
@@ -105,6 +110,8 @@ module tile_controller (
             ttu_start <= 1'b0;
             rtu_start <= 1'b0;
             mult_start <= 1'b0;
+            ktu_finished <= 1'b0;
+            ttu_finished <= 1'b0;
             for (int i = 0; i < 3; i++) begin
                 for (int j = 0; j < 3; j++) begin
                     ktu_kernel_in[i][j] <= 32'd0;
@@ -115,9 +122,10 @@ module tile_controller (
                     ttu_tile_in[i][j] <= 32'd0;
                     U[i][j] <= 32'd0;
                     V[i][j] <= 32'd0;
-                    M[i][j] <= 32'd0;
+                    M[i][j] <= 40'd0;
                 end
             end
+            result_out <= '{default: 32'd0};
         end else begin
             // Default: clear all start signals
             ktu_start <= 1'b0;
@@ -127,6 +135,8 @@ module tile_controller (
             
             case (state)
                 S_IDLE: begin
+                    ktu_finished <= 1'b0;
+                    ttu_finished <= 1'b0;
                     if (start) begin
                         ktu_kernel_in <= kernel_in;
                         ttu_tile_in <= tile_in;
@@ -134,53 +144,54 @@ module tile_controller (
                             for (int j = 0; j < 6; j++) begin
                                 U[i][j] <= 32'd0;
                                 V[i][j] <= 32'd0;
-                                M[i][j] <= 32'd0;
+                                M[i][j] <= 40'd0;
                             end
                         end
                     end
                 end
                 
                 S_TRANSFORM: begin
-                    if (!ktu_done) begin
+                    if (!ktu_finished && !ktu_done) begin
                         ktu_start <= 1'b1;
                     end
-                    if (!ttu_done) begin
+                    if (!ttu_finished && !ttu_done) begin
                         ttu_start <= 1'b1;
                     end
                     
                     if (ktu_done) begin
                         U <= ktu_kernel_out;
+                        ktu_finished <= 1'b1;
                     end
                     if (ttu_done) begin
                         V <= ttu_tile_out;
+                        ttu_finished <= 1'b1;
                     end
                 end
                 
                 S_POINTWISE_MULT: begin
                     // Trigger multiplier on entry
-                    if (!mult_done) begin
+                    if (!mult_done && !mult_busy) begin
                         mult_start <= 1'b1;
                     end
                     
                     if (mult_done) begin
-                        // Convert 64-bit to 32-bit and latch
-                        for (int i = 0; i < 6; i++) begin
-                            for (int j = 0; j < 6; j++) begin
-                                M[i][j] <= mult_c[i][j][31:0];
-                            end
-                        end
+                        M <= mult_M;
                     end
                 end
                 
                 S_REVERSE_TRANSFORM: begin
                     // Trigger RTU on entry
-                    if (!rtu_done) begin
+                    if (!rtu_done && !rtu_busy) begin
                         rtu_start <= 1'b1;
                     end
                     
                     if (rtu_done) begin
-                        // Latch final result
-                        result_out <= rtu_matrix_out;
+                        // Latch final result (truncate to 32 bits)
+                        for (int i = 0; i < 4; i++) begin
+                            for (int j = 0; j < 4; j++) begin
+                                result_out[i][j] <= rtu_R[i][j][31:0];
+                            end
+                        end
                     end
                 end
                 
@@ -194,9 +205,17 @@ module tile_controller (
     end
     
     // Module connections
-    assign mult_a = U;
-    assign mult_b = V;
-    assign rtu_matrix_in = M;
+    // Cast 32-bit U/V to 20-bit for multiplier
+    always_comb begin
+        for (int i = 0; i < 6; i++) begin
+            for (int j = 0; j < 6; j++) begin
+                mult_U[i][j] = U[i][j][19:0];
+                mult_V[i][j] = V[i][j][19:0];
+            end
+        end
+    end
+    
+    assign rtu_M = M;
     
     // Instantiate KTU
     kernel_transform_unit ktu_inst (
@@ -223,10 +242,11 @@ module tile_controller (
         .clk(clk),
         .rst_n(rst_n),
         .start(mult_start),
-        .a(mult_a),
-        .b(mult_b),
-        .c(mult_c),
-        .done(mult_done)
+        .U(mult_U),
+        .V(mult_V),
+        .M(mult_M),
+        .done(mult_done),
+        .busy(mult_busy)
     );
     
     // Instantiate RTU
@@ -234,9 +254,10 @@ module tile_controller (
         .clk(clk),
         .rst_n(rst_n),
         .start(rtu_start),
-        .matrix_in(rtu_matrix_in),
-        .matrix_out(rtu_matrix_out),
-        .transform_done(rtu_done)
+        .M(rtu_M),
+        .R(rtu_R),
+        .done(rtu_done),
+        .busy(rtu_busy)
     );
 
 endmodule

@@ -33,6 +33,10 @@ module op_mode_controller (
                 op_mode = OP_SCALAR;
                 calc_type = CALC_SCALAR_MUL;
             end
+            3'b100: begin
+                op_mode = OP_SINGLE;
+                calc_type = CALC_CONV;
+            end
             default: begin
                 op_mode = OP_SINGLE;
                 calc_type = CALC_TRANSPOSE;

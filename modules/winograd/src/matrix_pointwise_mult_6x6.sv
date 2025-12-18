@@ -1,42 +1,74 @@
+`timescale 1ns / 1ps
+
 module matrix_pointwise_mult_6x6 (
     input  logic        clk,
     input  logic        rst_n,
     input  logic        start,
-    input  logic [31:0] a [6][6],
-    input  logic [31:0] b [6][6],
-    output logic [63:0] c [6][6],
-    output logic        done
+    input  logic signed [19:0] U [0:5][0:5],
+    input  logic signed [19:0] V [0:5][0:5],
+    output logic signed [39:0] M [0:5][0:5],
+    output logic        done,
+    output logic        busy
 );
 
-    parameter LATENCY = 3;
-    
-    logic [63:0] mult [6][6];
-    logic [63:0] pipe [LATENCY-1:0][6][6];
-    logic [LATENCY:0] valid;
-    
-    assign valid[0] = start;
-    
-    always_comb begin
-        for (int i = 0; i < 6; i++)
-            for (int j = 0; j < 6; j++)
-                mult[i][j] = a[i][j] * b[i][j];
-    end
-    
+    // State definition
+    typedef enum logic [1:0] {
+        S_IDLE,
+        S_CALC,
+        S_DONE
+    } state_t;
+
+    state_t state;
+    logic [2:0] i, j; // Counters (0..5)
+
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            pipe <= '{default: 0};
-            valid[LATENCY:1] <= '0;
+            state <= S_IDLE;
+            done <= 0;
+            busy <= 0;
+            i <= 0;
+            j <= 0;
         end else begin
-            pipe[0] <= mult;
-            for (int k = 1; k < LATENCY; k++)
-                pipe[k] <= pipe[k-1];
-            
-            for (int k = 1; k <= LATENCY; k++)
-                valid[k] <= valid[k-1];
+            case (state)
+                S_IDLE: begin
+                    done <= 0;
+                    if (start) begin
+                        state <= S_CALC;
+                        busy <= 1;
+                        i <= 0;
+                        j <= 0;
+                    end else begin
+                        busy <= 0;
+                    end
+                end
+
+                S_CALC: begin
+                    // Perform multiplication for current element
+                    M[i][j] <= signed'(U[i][j]) * signed'(V[i][j]);
+
+                    // Increment counters
+                    if (j == 5) begin
+                        j <= 0;
+                        if (i == 5) begin
+                            state <= S_DONE;
+                            done <= 1;
+                            busy <= 0;
+                        end else begin
+                            i <= i + 1;
+                        end
+                    end else begin
+                        j <= j + 1;
+                    end
+                end
+
+                S_DONE: begin
+                    if (!start) begin
+                        state <= S_IDLE;
+                        done <= 0;
+                    end
+                end
+            endcase
         end
     end
-    
-    assign c = pipe[LATENCY-1];
-    assign done = valid[LATENCY];
 
 endmodule

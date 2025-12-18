@@ -148,4 +148,11 @@ module tile_controller_sim;
         end
     endtask
 
+    // Watchdog timer
+    initial begin
+        #100000; // 100us timeout
+        $display("\nError: Simulation timed out! tile_controller did not complete in time.");
+        $finish;
+    end
+
 endmodule
