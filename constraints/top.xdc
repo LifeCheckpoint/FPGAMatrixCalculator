@@ -90,7 +90,7 @@ set_property PACKAGE_PIN N4 [get_ports {sw[1]}]
 set_property PACKAGE_PIN R1 [get_ports {sw[0]}]
 
 # 7-Segment Display
-# Segments (a, b, c, d, e, f, g, dp)
+# Segments (a, b, c, d, e, f, g, dp), High means light
 set_property PACKAGE_PIN B4 [get_ports {seg[7]}]
 set_property PACKAGE_PIN A4 [get_ports {seg[6]}]
 set_property PACKAGE_PIN A3 [get_ports {seg[5]}]

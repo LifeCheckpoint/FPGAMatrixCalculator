@@ -35,6 +35,7 @@ module top_module (
 
     // Debounced Button
     logic btn_debounced;
+    logic [7:0] sw_debounced;
     
     // UART Signals
     logic [7:0] rx_data;
@@ -120,6 +121,16 @@ module top_module (
                       // Let's assume active low button input.
         .key_out(btn_debounced)
     );
+
+    switches_debounce #(
+        .WIDTH(8),
+        .CNT_MAX(20'd500000) // 20ms at 25MHz
+    ) u_sw_debounce (
+        .clk(clk_25m),
+        .rst_n(rst_n),
+        .sw_in(sw),
+        .sw_out(sw_debounced)
+    );
     
     // We need a pulse for 'start' or 'confirm'.
     // If btn_debounced is level, we need edge detection.
@@ -169,16 +180,18 @@ module top_module (
     //-------------------------------------------------------------------------
     
     switches2op u_sw2op (
-        .sw_mat_input(sw[7]),
-        .sw_gen(sw[6]),
-        .sw_show(sw[5]),
-        .sw_calculate(sw[4]),
-        .sw_settings(sw[3]),
+        .sw_mat_input(sw_debounced[7]),
+        .sw_gen(sw_debounced[6]),
+        .sw_show(sw_debounced[5]),
+        .sw_calculate(sw_debounced[4]),
+        .sw_settings(sw_debounced[3]),
         .op(op_mode_raw)
     );
     
     op_mode_controller u_op_ctrl (
-        .switches(sw), // Uses sw[2:0]
+        .clk(clk_25m),
+        .rst_n(rst_n),
+        .switches(sw_debounced), // Uses sw[2:0]
         .op_mode(calc_op_mode),
         .calc_type(calc_type_raw)
     );
@@ -388,6 +401,22 @@ module top_module (
     // LED & SEG Arbitration
     //-------------------------------------------------------------------------
     
+    // Default Display (0000)
+    logic [7:0] default_seg;
+    logic [3:0] default_an;
+    
+    seg7_display u_default_display (
+        .clk(clk_25m),
+        .rst_n(rst_n),
+        .valid(1'b1),
+        .bcd_data_0(4'd0),
+        .bcd_data_1(4'd0),
+        .bcd_data_2(4'd0),
+        .bcd_data_3(4'd0),
+        .seg(default_seg),
+        .an(default_an)
+    );
+
     // LED
     // LED[0]: Error
     // LED[1]: Done
@@ -444,10 +473,9 @@ module top_module (
             seg = compute_seg;
             an = compute_an;
         end else begin
-            // Default off or show something else?
-            // Let's show "----" or off
-            seg = 8'b11111111; // Off (assuming active low segments)
-            an = 4'b1111; // Off (assuming active low anodes)
+            // Default show 0000
+            seg = default_seg;
+            an = default_an;
         end
     end
 
