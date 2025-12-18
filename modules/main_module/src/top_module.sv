@@ -8,6 +8,7 @@ module top_module (
     input  logic        uart_rx,
     output logic        uart_tx,
     input  logic [7:0]  sw,
+    input  logic [7:0]  sw_dip, // Scalar Input DIP Switches
     input  logic        btn, // Confirm button
     output logic [7:0]  led,
     output logic [7:0]  seg,
@@ -248,7 +249,7 @@ module top_module (
         .rst_n(rst_n),
         .start(btn_pressed_pulse && mode_is_calc),
         .confirm_btn(btn_pressed_pulse),
-        .scalar_in(32'd0), // Not used from switches directly, handled by selector
+        .scalar_in({24'd0, sw_dip}), // From DIP switches
         .random_scalar(1'b0), // Not implemented yet
         .op_mode_in(op_mode_t'(calc_op_mode)),
         .calc_type_in(calc_type_t'(calc_type_raw)),
