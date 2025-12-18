@@ -2,6 +2,7 @@ package matrix_op_selector_pkg;
 
     typedef enum logic [4:0] {
         IDLE,
+        WAIT_INFO,
         GET_DIMS,
         WAIT_M,
         READ_M,

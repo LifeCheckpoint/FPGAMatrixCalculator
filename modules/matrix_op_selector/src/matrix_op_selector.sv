@@ -65,6 +65,11 @@ module matrix_op_selector #(
     logic [ADDR_WIDTH-1:0] reader_addr;
     logic [7:0] reader_ascii;
     logic reader_ascii_valid;
+
+    logic info_start, info_done, info_busy;
+    logic [ADDR_WIDTH-1:0] info_addr;
+    logic [7:0] info_ascii;
+    logic info_ascii_valid;
     
     logic timer_start, timer_timeout, timer_led;
     logic [7:0] timer_seg;
@@ -117,6 +122,23 @@ module matrix_op_selector #(
         .ascii_valid(reader_ascii_valid),
         .ascii_ready(uart_tx_ready)
     );
+
+    // Matrix Info Reader Instance
+    matrix_info_reader #(
+        .BLOCK_SIZE(BLOCK_SIZE),
+        .ADDR_WIDTH(ADDR_WIDTH)
+    ) u_info_reader (
+        .clk(clk),
+        .rst_n(rst_n),
+        .start(info_start),
+        .busy(info_busy),
+        .done(info_done),
+        .bram_addr(info_addr),
+        .bram_data(bram_data),
+        .ascii_data(info_ascii),
+        .ascii_valid(info_ascii_valid),
+        .ascii_ready(uart_tx_ready)
+    );
     
     // Random Generator
     logic [31:0] rand_out_array [0:0];
@@ -150,13 +172,22 @@ module matrix_op_selector #(
     assign seg = timer_seg;
     assign an = timer_an;
     
-    assign uart_tx_data = reader_ascii;
-    assign uart_tx_valid = reader_ascii_valid;
+    // UART TX Mux
+    always_comb begin
+        if (info_busy) begin
+            uart_tx_data = info_ascii;
+            uart_tx_valid = info_ascii_valid;
+        end else begin
+            uart_tx_data = reader_ascii;
+            uart_tx_valid = reader_ascii_valid;
+        end
+    end
     
     // BRAM Address Mux
     always_comb begin
         if (scanner_busy) bram_addr = scanner_addr;
         else if (reader_busy) bram_addr = reader_addr;
+        else if (info_busy) bram_addr = info_addr;
         else bram_addr = 0;
     end
     
@@ -178,6 +209,7 @@ module matrix_op_selector #(
             state <= IDLE;
             scanner_start <= 0;
             reader_start <= 0;
+            info_start <= 0;
             timer_start <= 0;
             input_clear <= 0;
             result_valid <= 0;
@@ -192,6 +224,7 @@ module matrix_op_selector #(
             // Default pulses
             scanner_start <= 0;
             reader_start <= 0;
+            info_start <= 0;
             timer_start <= 0;
             input_clear <= 0;
             result_valid <= 0;
@@ -200,8 +233,15 @@ module matrix_op_selector #(
             case (state)
                 IDLE: begin
                     if (start) begin
-                        // Do not clear input buffer here, as it may contain pre-loaded dimensions.
-                        // If we already have dimensions (2 numbers), proceed directly to read them.
+                        // Start by showing matrix info
+                        info_start <= 1;
+                        state <= WAIT_INFO;
+                    end
+                end
+
+                WAIT_INFO: begin
+                    if (info_done) begin
+                        // After showing info, proceed to check input buffer
                         if (input_count >= 2) begin
                             input_rd_addr <= 0;
                             state <= WAIT_M;
