@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
 
 module Winograd_Post_Transform_1D (
-    input  logic signed [39:0] in_vec [0:5],
-    output logic signed [39:0] out_vec [0:3]
+    input  logic signed [63:0] in_vec [0:5],
+    output logic signed [63:0] out_vec [0:3]
 );
     // Winograd post-processing transform equations (A^T * x)
     // A^T = 

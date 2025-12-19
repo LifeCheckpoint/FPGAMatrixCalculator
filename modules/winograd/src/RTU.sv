@@ -4,8 +4,8 @@ module reverse_transform_unit (
     input  logic        clk,
     input  logic        rst_n,
     input  logic        start,
-    input  logic signed [39:0] M [0:5][0:5],
-    output logic signed [39:0] R [0:3][0:3],
+    input  logic signed [63:0] M [0:5][0:5],
+    output logic signed [63:0] R [0:3][0:3],
     output logic        done,
     output logic        busy
 );
@@ -22,11 +22,11 @@ module reverse_transform_unit (
     logic [2:0] idx; // Counter for rows/cols (max 6)
 
     // Intermediate storage
-    logic signed [39:0] temp [0:3][0:5]; // 4x6 matrix
+    logic signed [63:0] temp [0:3][0:5]; // 4x6 matrix
 
     // Transform unit interface
-    logic signed [39:0] trans_in [0:5];
-    logic signed [39:0] trans_out [0:3];
+    logic signed [63:0] trans_in [0:5];
+    logic signed [63:0] trans_out [0:3];
 
     Winograd_Post_Transform_1D transform_inst (
         .in_vec(trans_in),

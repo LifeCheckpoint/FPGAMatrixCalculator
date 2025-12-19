@@ -4,9 +4,9 @@ module matrix_pointwise_mult_6x6 (
     input  logic        clk,
     input  logic        rst_n,
     input  logic        start,
-    input  logic signed [19:0] U [0:5][0:5],
-    input  logic signed [19:0] V [0:5][0:5],
-    output logic signed [39:0] M [0:5][0:5],
+    input  logic signed [31:0] U [0:5][0:5],
+    input  logic signed [31:0] V [0:5][0:5],
+    output logic signed [63:0] M [0:5][0:5],
     output logic        done,
     output logic        busy
 );

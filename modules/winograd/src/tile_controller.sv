@@ -32,23 +32,23 @@ module tile_controller (
     
     // Pointwise multiplication signals
     logic mult_start;
-    logic signed [19:0] mult_U [0:5][0:5];
-    logic signed [19:0] mult_V [0:5][0:5];
-    logic signed [39:0] mult_M [0:5][0:5];
+    logic signed [31:0] mult_U [0:5][0:5];
+    logic signed [31:0] mult_V [0:5][0:5];
+    logic signed [63:0] mult_M [0:5][0:5];
     logic mult_done;
     logic mult_busy;
     
     // RTU signals
     logic rtu_start;
-    logic signed [39:0] rtu_M [0:5][0:5];
-    logic signed [39:0] rtu_R [0:3][0:3];
+    logic signed [63:0] rtu_M [0:5][0:5];
+    logic signed [63:0] rtu_R [0:3][0:3];
     logic rtu_done;
     logic rtu_busy;
     
     // Internal registers
     logic [31:0] U [0:5][0:5];  // Transformed kernel
     logic [31:0] V [0:5][0:5];  // Transformed tile
-    logic signed [39:0] M [0:5][0:5];  // Pointwise product result
+    logic signed [63:0] M [0:5][0:5];  // Pointwise product result
     
     logic ktu_finished;
     logic ttu_finished;
@@ -122,7 +122,7 @@ module tile_controller (
                     ttu_tile_in[i][j] <= 32'd0;
                     U[i][j] <= 32'd0;
                     V[i][j] <= 32'd0;
-                    M[i][j] <= 40'd0;
+                    M[i][j] <= 64'd0;
                 end
             end
             result_out <= '{default: 32'd0};
@@ -144,7 +144,7 @@ module tile_controller (
                             for (int j = 0; j < 6; j++) begin
                                 U[i][j] <= 32'd0;
                                 V[i][j] <= 32'd0;
-                                M[i][j] <= 40'd0;
+                                M[i][j] <= 64'd0;
                             end
                         end
                     end
@@ -205,12 +205,12 @@ module tile_controller (
     end
     
     // Module connections
-    // Cast 32-bit U/V to 20-bit for multiplier
+    // No truncation needed for 32-bit inputs
     always_comb begin
         for (int i = 0; i < 6; i++) begin
             for (int j = 0; j < 6; j++) begin
-                mult_U[i][j] = U[i][j][19:0];
-                mult_V[i][j] = V[i][j][19:0];
+                mult_U[i][j] = signed'(U[i][j]);
+                mult_V[i][j] = signed'(V[i][j]);
             end
         end
     end
