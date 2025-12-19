@@ -10,6 +10,8 @@ module top_module (
     input  logic [7:0]  sw,
     input  logic [7:0]  sw_dip, // Scalar Input DIP Switches
     input  logic        btn, // Confirm button
+    input  logic        btn_clear, // Manual Clear Button (S1)
+    input  logic        btn_dump, // Debug Dump Button (S3)
     output logic [7:0]  led,
     output logic [7:0]  seg,
     output logic [3:0]  an,
@@ -35,6 +37,8 @@ module top_module (
 
     // Debounced Button
     logic btn_debounced;
+    logic btn_clear_debounced;
+    logic btn_dump_debounced;
     logic [7:0] sw_debounced;
     
     // UART Signals
@@ -122,6 +126,24 @@ module top_module (
         .key_out(btn_debounced)
     );
 
+    key_debounce #(
+        .CNT_MAX(20'd500000) // 20ms at 25MHz
+    ) u_debounce_clear (
+        .clk(clk_25m),
+        .rst_n(rst_n),
+        .key_in(btn_clear),
+        .key_out(btn_clear_debounced)
+    );
+
+    key_debounce #(
+        .CNT_MAX(20'd500000) // 20ms at 25MHz
+    ) u_debounce_dump (
+        .clk(clk_25m),
+        .rst_n(rst_n),
+        .key_in(btn_dump),
+        .key_out(btn_dump_debounced)
+    );
+
     switches_debounce #(
         .WIDTH(8),
         .CNT_MAX(20'd500000) // 20ms at 25MHz
@@ -138,13 +160,29 @@ module top_module (
     logic btn_pressed_pulse;
     logic btn_d1;
     
+    logic btn_clear_pulse;
+    logic btn_clear_d1;
+    
+    logic btn_dump_pulse;
+    logic btn_dump_d1;
+    
     always_ff @(posedge clk_25m or negedge rst_n) begin
         if (!rst_n) begin
             btn_d1 <= 1'b1;
             btn_pressed_pulse <= 1'b0;
+            btn_clear_d1 <= 1'b1;
+            btn_clear_pulse <= 1'b0;
+            btn_dump_d1 <= 1'b1;
+            btn_dump_pulse <= 1'b0;
         end else begin
             btn_d1 <= btn_debounced;
             btn_pressed_pulse <= (btn_d1 && !btn_debounced);
+            
+            btn_clear_d1 <= btn_clear_debounced;
+            btn_clear_pulse <= (btn_clear_d1 && !btn_clear_debounced);
+            
+            btn_dump_d1 <= btn_dump_debounced;
+            btn_dump_pulse <= (btn_dump_d1 && !btn_dump_debounced);
         end
     end
 
@@ -210,6 +248,11 @@ module top_module (
     logic input_rx_valid;
     assign input_rx_valid = rx_done && (mode_is_input || mode_is_gen || mode_is_settings);
 
+    // Debug Dump Signals
+    logic [7:0] debug_dump_tx_data;
+    logic       debug_dump_tx_valid;
+    logic       debug_dump_busy;
+
     input_subsystem #(
         .BLOCK_SIZE(1152),
         .DATA_WIDTH(32),
@@ -221,6 +264,12 @@ module top_module (
         .mode_is_gen(mode_is_gen),
         .mode_is_settings(mode_is_settings),
         .start(btn_pressed_pulse), // Start generation or confirm settings
+        .manual_clear(btn_clear_pulse), // Manual clear signal
+        .manual_dump(btn_dump_pulse), // Manual dump signal
+        .dump_tx_data(debug_dump_tx_data),
+        .dump_tx_valid(debug_dump_tx_valid),
+        .dump_tx_ready(!tx_busy),
+        .dump_busy(debug_dump_busy),
         .busy(input_busy),
         .done(input_done),
         .error(input_error),
@@ -380,11 +429,70 @@ module top_module (
     // UART TX Arbitration
     //-------------------------------------------------------------------------
     
+    // Manual Clear Response Logic ("AC")
+    logic [2:0] clear_resp_state; // 0: Idle, 1: Send 'A', 2: Wait, 3: Send 'C', 4: Wait
+    logic       clear_resp_valid;
+    logic [7:0] clear_resp_data;
+    logic [3:0] clear_wait_cnt;
+    
+    always_ff @(posedge clk_25m or negedge rst_n) begin
+        if (!rst_n) begin
+            clear_resp_state <= 0;
+            clear_resp_valid <= 0;
+            clear_resp_data <= 0;
+            clear_wait_cnt <= 0;
+        end else begin
+            clear_resp_valid <= 0; // Default
+            
+            case (clear_resp_state)
+                0: begin
+                    if (btn_clear_pulse) begin
+                        clear_resp_data <= "A";
+                        clear_resp_valid <= 1;
+                        clear_resp_state <= 1;
+                    end
+                end
+                1: begin
+                    // Wait for tx_busy to assert (if it hasn't already) or just wait a bit
+                    clear_resp_state <= 2;
+                    clear_wait_cnt <= 4'd10;
+                end
+                2: begin
+                    if (clear_wait_cnt > 0) begin
+                        clear_wait_cnt <= clear_wait_cnt - 1;
+                    end else if (!tx_busy) begin
+                        clear_resp_data <= "C";
+                        clear_resp_valid <= 1;
+                        clear_resp_state <= 3;
+                    end
+                end
+                3: begin
+                    clear_resp_state <= 4;
+                    clear_wait_cnt <= 4'd10;
+                end
+                4: begin
+                    if (clear_wait_cnt > 0) begin
+                        clear_wait_cnt <= clear_wait_cnt - 1;
+                    end else if (!tx_busy) begin
+                        clear_resp_state <= 0;
+                    end
+                end
+            endcase
+        end
+    end
+
     always_comb begin
         tx_start = 0;
         tx_data = 0;
         
-        if (mode_is_calc) begin
+        // Priority: Manual Clear Response > Debug Dump > Calc > Show > Echo
+        if (clear_resp_valid) begin
+            tx_start = 1;
+            tx_data = clear_resp_data;
+        end else if (debug_dump_tx_valid) begin
+            tx_start = 1;
+            tx_data = debug_dump_tx_data;
+        end else if (mode_is_calc) begin
             tx_start = compute_tx_valid;
             tx_data = compute_tx_data;
         end else if (mode_is_show) begin

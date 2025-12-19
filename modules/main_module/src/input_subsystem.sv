@@ -13,6 +13,12 @@ module input_subsystem #(
     input  logic                  mode_is_gen,
     input  logic                  mode_is_settings,
     input  logic                  start, // Pulse
+    input  logic                  manual_clear, // Manual clear pulse
+    input  logic                  manual_dump, // Manual dump pulse
+    output logic [7:0]            dump_tx_data,
+    output logic                  dump_tx_valid,
+    input  logic                  dump_tx_ready,
+    output logic                  dump_busy,
     
     // Status
     output logic                  busy,
@@ -56,6 +62,13 @@ module input_subsystem #(
     logic [10:0]           buf_rd_addr;
     logic [31:0]           buf_rd_data;
     logic [10:0]           num_count;
+    
+    // Debug Dump Signals
+    logic [10:0]           dump_rd_addr;
+    logic [10:0]           dump_cnt;
+    logic [2:0]            dump_state; // 0: Idle, 1: Read, 2: Send, 3: Wait
+    logic [31:0]           dump_data_latch;
+    logic [3:0]            dump_byte_cnt;
     
     // Sub-module Status
     logic input_busy, input_done, input_error;
@@ -139,10 +152,28 @@ module input_subsystem #(
     
     // Clear buffer when mode changes OR when operation completes successfully OR on error
     // This allows consecutive operations without switching modes and prevents deadlock on error
-    // Note: settings_error is persistent, so we don't include it to avoid locking the buffer
-    // Added force_reset_pulse to force clear buffer on timeout
-    // Added start signal to force clear buffer on new command (user override)
-    assign buf_clear = (current_mode != last_mode) || settings_done || input_done || gen_done || input_error || gen_error || force_reset_pulse || (start && (mode_is_input || mode_is_gen));
+    // Also triggered by manual_clear
+    // Extended pulse for robustness
+    logic [3:0] clear_pulse_cnt;
+    logic       buf_clear_extended;
+    
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            clear_pulse_cnt <= 0;
+            buf_clear_extended <= 0;
+        end else begin
+            if ((current_mode != last_mode) || settings_done || input_done || gen_done || input_error || gen_error || force_reset_pulse || manual_clear) begin
+                clear_pulse_cnt <= 4'd15;
+                buf_clear_extended <= 1'b1;
+            end else if (clear_pulse_cnt > 0) begin
+                clear_pulse_cnt <= clear_pulse_cnt - 1;
+                buf_clear_extended <= 1'b1;
+            end else begin
+                buf_clear_extended <= 1'b0;
+            end
+        end
+    end
+    assign buf_clear = buf_clear_extended;
     
     // Generate payload_last on terminator (newline/CR)
     wire internal_pkt_last;
@@ -181,10 +212,101 @@ module input_subsystem #(
     
     // Buffer Read Address Mux
     always_comb begin
-        if (mode_is_input) buf_rd_addr = input_buf_addr;
+        if (dump_busy) buf_rd_addr = dump_rd_addr;
+        else if (mode_is_input) buf_rd_addr = input_buf_addr;
         else if (mode_is_gen) buf_rd_addr = gen_buf_addr;
         else if (mode_is_settings) buf_rd_addr = settings_buf_addr;
         else buf_rd_addr = 0;
+    end
+
+    //-------------------------------------------------------------------------
+    // Debug Dump Logic
+    //-------------------------------------------------------------------------
+    // Dumps the first 16 words of the buffer to UART in hex format
+    
+    // Hex char conversion
+    function [7:0] to_hex(input [3:0] val);
+        if (val < 10) return "0" + val;
+        else return "A" + (val - 10);
+    endfunction
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            dump_state <= 0;
+            dump_cnt <= 0;
+            dump_rd_addr <= 0;
+            dump_busy <= 0;
+            dump_tx_valid <= 0;
+            dump_tx_data <= 0;
+            dump_byte_cnt <= 0;
+        end else begin
+            dump_tx_valid <= 0; // Default
+            
+            case (dump_state)
+                0: begin // Idle
+                    if (manual_dump) begin
+                        dump_state <= 1;
+                        dump_cnt <= 0;
+                        dump_rd_addr <= 0;
+                        dump_busy <= 1;
+                    end else begin
+                        dump_busy <= 0;
+                    end
+                end
+                1: begin // Read RAM
+                    // Address already set in prev state or loop
+                    dump_state <= 2; // RAM latency is 1 cycle? Assuming 1 cycle.
+                end
+                2: begin // Capture Data
+                    dump_data_latch <= buf_rd_data;
+                    dump_byte_cnt <= 0;
+                    dump_state <= 3;
+                end
+                3: begin // Send Bytes (Hex)
+                    if (dump_tx_ready) begin
+                        dump_tx_valid <= 1;
+                        case (dump_byte_cnt)
+                            0: dump_tx_data <= to_hex(dump_data_latch[31:28]);
+                            1: dump_tx_data <= to_hex(dump_data_latch[27:24]);
+                            2: dump_tx_data <= to_hex(dump_data_latch[23:20]);
+                            3: dump_tx_data <= to_hex(dump_data_latch[19:16]);
+                            4: dump_tx_data <= to_hex(dump_data_latch[15:12]);
+                            5: dump_tx_data <= to_hex(dump_data_latch[11:8]);
+                            6: dump_tx_data <= to_hex(dump_data_latch[7:4]);
+                            7: dump_tx_data <= to_hex(dump_data_latch[3:0]);
+                            8: dump_tx_data <= " "; // Space separator
+                        endcase
+                        
+                        if (dump_byte_cnt == 8) begin
+                            dump_state <= 4; // Next word
+                        end else begin
+                            dump_byte_cnt <= dump_byte_cnt + 1;
+                            dump_state <= 5; // Wait for ready to deassert? No, just wait next cycle
+                        end
+                    end
+                end
+                5: begin // Wait for next byte
+                     if (dump_tx_ready) dump_state <= 3;
+                end
+                4: begin // Next word check
+                    if (dump_cnt == 15) begin // Dump 16 words
+                        dump_tx_data <= 8'h0A; // Newline
+                        dump_tx_valid <= 1;
+                        dump_state <= 6;
+                    end else begin
+                        dump_cnt <= dump_cnt + 1;
+                        dump_rd_addr <= dump_rd_addr + 1;
+                        dump_state <= 1;
+                    end
+                end
+                6: begin // Finish
+                    if (dump_tx_ready) begin
+                        dump_state <= 0;
+                        dump_busy <= 0;
+                    end
+                end
+            endcase
+        end
     end
 
     //-------------------------------------------------------------------------

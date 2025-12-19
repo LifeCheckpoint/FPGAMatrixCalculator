@@ -46,6 +46,14 @@ set_property PACKAGE_PIN P15 [get_ports rst_n]
 # Confirm Button (Mapped to S4 - U4, as S5 is PROG)
 set_property PACKAGE_PIN U4 [get_ports btn]
 
+# Manual Clear Button (S1 - R17)
+set_property PACKAGE_PIN R17 [get_ports btn_clear]
+set_property IOSTANDARD LVCMOS33 [get_ports btn_clear]
+
+# Debug Dump Button (S3 - V1)
+set_property PACKAGE_PIN V1 [get_ports btn_dump]
+set_property IOSTANDARD LVCMOS33 [get_ports btn_dump]
+
 # UART
 set_property PACKAGE_PIN T4 [get_ports uart_tx]
 set_property PACKAGE_PIN N5 [get_ports uart_rx]

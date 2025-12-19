@@ -152,7 +152,7 @@ module ascii_num_sep_top #(
     ) u_ram (
         .clk        (clk),
         .rst_n      (rst_n),
-        .clear      (1'b0), // Disable RAM clearing to avoid long delays
+        .clear      (buf_clear), // Enable RAM clearing to prevent data residue
         .wr_en      (ram_wr_en),
         .wr_addr    (ram_wr_addr),
         .wr_data    (ram_wr_data),

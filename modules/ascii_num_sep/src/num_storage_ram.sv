@@ -34,8 +34,8 @@ module num_storage_ram #(
             clearing <= 1'b0;
             clear_addr <= '0;
         end else begin
-            if (clear && !clearing) begin
-                // Start clearing
+            if (clear) begin
+                // Start clearing (force restart if already clearing)
                 clearing <= 1'b1;
                 clear_addr <= '0;
             end else if (clearing) begin
