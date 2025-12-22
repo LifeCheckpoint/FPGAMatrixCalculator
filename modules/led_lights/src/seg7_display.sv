@@ -33,24 +33,24 @@ module seg7_display (
         if (valid) begin
             case (digit_select)
                 2'b00: begin
-                    an = 4'b1110;
+                    an = 4'b1000;
                     current_digit = bcd_data_0;
                 end
                 2'b01: begin
-                    an = 4'b1101;
+                    an = 4'b0100;
                     current_digit = bcd_data_1;
                 end
                 2'b10: begin
-                    an = 4'b1011;
+                    an = 4'b0010;
                     current_digit = bcd_data_2;
                 end
                 2'b11: begin
-                    an = 4'b0111;
+                    an = 4'b0001;
                     current_digit = bcd_data_3;
                 end
             endcase
         end else begin
-            an = 4'b1111;
+            an = 4'b0000;
             current_digit = 4'd15;
         end
     end

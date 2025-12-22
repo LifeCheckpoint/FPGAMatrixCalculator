@@ -58,8 +58,8 @@ module led_display_ctrl (
                 an  = an_calc;
             end
             default: begin // Off
-                seg = 8'b11111111; // All segments OFF (active low)
-                an  = 4'b1111;     // All digits OFF (active low)
+                seg = 8'b00000000; // All segments OFF (active high)
+                an  = 4'b0000;     // All digits OFF (active high)
             end
         endcase
     end

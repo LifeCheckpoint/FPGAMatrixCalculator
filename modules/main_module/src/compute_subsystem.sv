@@ -80,6 +80,8 @@ module compute_subsystem #(
     logic [3:0] an_ctrl;
     logic [1:0] display_mode;
     logic [2:0] method_sel;
+    logic show_result;
+    calc_type_t calc_type_d1;
     
     // State Machine for Coordination
     typedef enum logic [1:0] {
@@ -234,13 +236,29 @@ module compute_subsystem #(
     // CALC_CONV (4) -> 4
     assign method_sel = 3'(calc_type_in);
     
+    // Show Result Logic
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            calc_type_d1 <= CALC_TRANSPOSE;
+            show_result <= 1'b0;
+        end else begin
+            calc_type_d1 <= calc_type_in;
+            
+            if (state == DONE_STATE) begin
+                show_result <= 1'b1;
+            end else if (state == SELECTING || calc_type_in != calc_type_d1) begin
+                show_result <= 1'b0;
+            end
+        end
+    end
+
     // Display Mode Logic
     // Mode 0: Seg7 (Cycle Count / Num Count)
     // Mode 1: Calc Method (Op Code)
     always_comb begin
         if (state == SELECTING) begin
             display_mode = 2'd0; // Show Num Count
-        end else if (state == DONE_STATE && selector_result_op == CALC_CONV) begin
+        end else if (show_result && selector_result_op == CALC_CONV) begin
             display_mode = 2'd0; // Show Cycle Count
         end else begin
             display_mode = 2'd1; // Show Op Code

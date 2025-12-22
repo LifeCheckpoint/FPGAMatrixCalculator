@@ -29,10 +29,10 @@ module calc_method_show (
     // Anode control - Scan all 4 digits
     always @(*) begin
         case (digit_select)
-            2'b00: an = 4'b1110;
-            2'b01: an = 4'b1101;
-            2'b10: an = 4'b1011;
-            2'b11: an = 4'b0111;
+            2'b00: an = 4'b0001;
+            2'b01: an = 4'b0010;
+            2'b10: an = 4'b0100;
+            2'b11: an = 4'b1000;
         endcase
     end
 

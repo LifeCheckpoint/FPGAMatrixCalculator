@@ -1,5 +1,5 @@
 module key_debounce #(
-    parameter CNT_MAX = 20'd2000000 // 100MHz, 20ms
+    parameter CNT_MAX = 20'd2000000 // 25MHz, 80ms
 )(
     input  wire clk,
     input  wire rst_n,
